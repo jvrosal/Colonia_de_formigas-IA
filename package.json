@@ -1,0 +1,10 @@
+{
+  "name": "simulador-ant-system-ufpi",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Etapas 00 a 02: grafo, distâncias e núcleo probabilístico Ant System",
+  "scripts": {
+    "test": "node --test"
+  }
+}
