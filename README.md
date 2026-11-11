@@ -1,167 +1,412 @@
-# Simulador Ant System — Etapa 02
 
-Trabalho da disciplina de **Inteligência Artificial da UFPI (2026.2)**: otimização de rotas de entrega por colônia de formigas, especificamente a variante **Ant System**.
+# Simulador de Colônia de Formigas — Ant System
 
-**Importante:** esta versão não implementa o algoritmo completo Ant System nem executa a otimização.
+Projeto desenvolvido para a disciplina de Inteligência Artificial da Universidade Federal do Piauí (UFPI), período 2026.2.
 
-**Estado atual:** Etapas 00 (fundação), 01 (grafo e distância) e 02 (feromônios iniciais, pesos, probabilidades e sorteios) implementadas. **Ainda não há construção de rotas por formigas, iterações, evaporação, depósito de feromônios nem execução da simulação.** Esses recursos serão implementados nas Etapas 03–05. Os formulários e controles continuam desabilitados propositalmente até a Etapa 06.
+O objetivo é implementar um simulador de otimização de rotas de entrega utilizando o algoritmo Ant System, uma variante da Otimização por Colônia de Formigas (ACO).
 
-## Tecnologia e execução
+## 1. Descrição
 
-- HTML5, CSS3, JavaScript ES modules e SVG nativo, sem frameworks/bibliotecas externas.
-- Código funciona inteiramente no navegador; nenhum backend é necessário.
-- Durante o desenvolvimento, use um **servidor de arquivos estáticos**, já que navegadores podem bloquear imports ES em `file://`:
+O problema consiste em encontrar uma rota de menor distância para um veículo que deve:
 
-```bash
-# na pasta colonia-formigas
-python -m http.server 8000
-# no Windows, também pode utilizar: py -m http.server 8000
-```
+- Sair de um depósito.
+- Visitar todos os pontos de entrega exatamente uma vez.
+- Retornar ao depósito inicial.
+- Minimizar a distância total percorrida.
 
-Abra **http://localhost:8000/**.
+Os pontos são representados por um grafo completo, não direcionado, com coordenadas no plano cartesiano.
 
-Para rodar os testes automáticos, é necessário **Node.js 18+** (recomendado Node.js 22+), sem dependências externas:
+As distâncias são calculadas pela fórmula euclidiana:
 
-```bash
-npm test
-# ou:
-node --test
-```
+d(i,j) = √((xi - xj)² + (yi - yj)²)
 
-A instalação do Node.js destina-se apenas aos testes de desenvolvimento e não é necessária para utilizar a aplicação publicada.
+O algoritmo utiliza feromônios e distâncias para orientar probabilisticamente a construção das rotas.
 
-## Estrutura de arquivos
+## 2. Tecnologias
+
+O projeto utiliza:
+
+- HTML5: estrutura da aplicação.
+- CSS3: apresentação e responsividade.
+- JavaScript: implementação do Ant System.
+- SVG: representação visual do grafo.
+- Node.js: execução dos testes automatizados.
+
+Não são utilizadas bibliotecas externas de otimização ou inteligência artificial.
+
+A aplicação funciona no navegador, sem servidor de aplicação.
+
+## 3. Funcionalidades implementadas
+
+### Etapas 00 e 01 — Estrutura e grafo
+
+- Estrutura inicial da aplicação.
+- Cadastro e validação dos vértices.
+- Grafo completo e não direcionado.
+- Cálculo das distâncias euclidianas.
+- Matriz de distâncias.
+- Validação de rotas completas.
+
+### Etapa 02 — Probabilidades
+
+- Inicialização da matriz de feromônios.
+- Cálculo dos pesos de escolha.
+- Normalização das probabilidades.
+- Sorteio proporcional aos pesos.
+- Gerador pseudoaleatório Mulberry32 com semente.
+
+O peso de escolha é calculado por:
+
+w(i,j) = τ(i,j)^α × (1/d(i,j))^β
+
+A probabilidade de escolher o próximo vértice é:
+
+p(i,j) = w(i,j) / Σw(i,u)
+
+A soma considera apenas os vértices ainda não visitados.
+
+### Etapa 03 — Construção de rotas
+
+Cada formiga constrói uma rota completa:
+
+1. Começa no depósito.
+2. Calcula as probabilidades dos destinos disponíveis.
+3. Sorteia o próximo vértice.
+4. Repete até visitar todos os pontos.
+5. Retorna ao depósito.
+6. Calcula o comprimento total da rota.
+
+Os vértices intermediários não podem ser repetidos.
+
+### Etapa 04 — Atualização dos feromônios
+
+A atualização ocorre somente depois que todas as formigas de uma iteração terminam suas rotas.
+
+A fórmula utilizada é:
+
+τ_novo(i,j) = (1 - ρ) × τ_antigo(i,j) + ΣΔτk(i,j)
+
+Cada formiga deposita:
+
+Δτk(i,j) = Q / Lk
+
+O depósito é realizado apenas nas arestas percorridas pela formiga, incluindo o retorno ao depósito.
+
+A matriz permanece simétrica e utiliza o piso numérico de 10^-12 nas arestas.
+
+### Etapa 05 — Motor de simulação
+
+O motor permite:
+
+- Executar uma ou várias iterações.
+- Construir rotas com múltiplas formigas.
+- Calcular a melhor distância da iteração.
+- Calcular a distância média das formigas.
+- Guardar a melhor solução acumulada.
+- Atualizar os feromônios.
+- Registrar o histórico.
+- Reiniciar a simulação e a semente.
+
+O módulo principal é `js/core/simulation.js`.
+
+Suas principais funções são:
+
+- `createSimulation()`: cria a simulação.
+- `step()`: executa uma iteração.
+- `runAll()`: executa as iterações restantes.
+- `reset()`: restaura o estado inicial.
+- `getState()`: retorna o estado atual.
+
+### Etapa 06 — Interface interativa
+
+A interface permite configurar e acompanhar o algoritmo diretamente no navegador.
+
+Recursos implementados:
+
+- Adicionar, editar e remover vértices.
+- Escolher o depósito.
+- Configurar os parâmetros.
+- Executar e pausar a simulação.
+- Avançar uma iteração.
+- Reiniciar a execução.
+- Visualizar a melhor rota.
+- Consultar métricas e histórico.
+- Inspecionar logs das decisões das formigas.
+- Acompanhar os feromônios nas arestas.
+
+A interface utiliza o motor de simulação implementado na Etapa 05.
+
+## 4. Parâmetros
+
+| Parâmetro | Intervalo |
+|---|---|
+| Número de vértices | 4 a 12 |
+| Número de formigas | 1 a 100 |
+| Número de iterações | 1 a 200 |
+| Alfa (α) | 0 a 5 |
+| Beta (β) | 0 a 5 |
+| Evaporação (ρ) | 0% a 90% |
+| Feromônio inicial (τ₀) | 0,01 a 100 |
+| Constante Q | 0,01 a 10.000 |
+| Semente aleatória | Inteiro seguro |
+
+Os identificadores dos vértices devem ser únicos.
+
+As coordenadas devem estar entre 0 e 1000, com até duas casas decimais.
+
+Não são permitidos vértices com coordenadas duplicadas.
+
+## 5. Estrutura do projeto
 
 ```text
-colonia-formigas/
+Colonia_de_formigas-IA/
+│
 ├── index.html
+├── README.md
+├── package.json
+│
 ├── css/
 │   └── styles.css
+│
 ├── js/
 │   ├── app.js
+│   │
 │   ├── core/
 │   │   ├── constants.js
 │   │   ├── validation.js
 │   │   ├── graph.js
-│   │   ├── random.js                  # NOVO: PRNG Mulberry32 com semente
-│   │   └── ant-system.js              # NOVO: τ₀, pesos, probabilidades, sorteios
+│   │   ├── random.js
+│   │   ├── ant-system.js
+│   │   └── simulation.js
+│   │
 │   └── ui/
 │       ├── forms.js
 │       ├── dashboard.js
 │       ├── graph-view.js
 │       ├── distance-matrix.js
-│       └── probability-preview.js    # NOVO: prévia numérica da primeira escolha
-├── tests/
-│   ├── stage00.test.js
-│   ├── validation.test.js
-│   ├── graph.test.js
-│   └── ant-system.test.js            # NOVO: 31 testes da Etapa 02
-├── package.json
-└── README.md
+│       └── probability-preview.js
+│
+└── tests/
+    ├── stage00.test.js
+    ├── validation.test.js
+    ├── graph.test.js
+    ├── ant-system.test.js
+    ├── routes-pheromones.test.js
+    └── simulation.test.js
 ```
 
-## Base matemática: Etapas 00–01
+## 6. Como executar
 
-A aplicação começa com cinco pontos válidos: A(100,100), B(300,100), C(450,300), D(300,500), E(100,400), sendo A o depósito. O grafo completo é **não direcionado**, possui 10 arestas, distâncias euclidianas simétricas e diagonal zero.
+Clone o repositório:
 
-A matriz de distâncias nunca é arredondada internamente. Uma rota válida começa no depósito, visita cada entrega uma única vez e retorna ao depósito.
-
-Para o retângulo de referência A(0,0), B(3,0), C(3,4), D(0,4), os seis comprimentos possíveis são **14, 16, 18, 16, 18 e 14**, respectivamente para as rotas ABCDA, ABDCA, ACBDA, ACDBA, ADBCA e ADCBA. Os testes automatizados da Etapa 01 confirmam esses valores.
-
-## Núcleo probabilístico: Etapa 02
-
-### 1. Feromônio inicial
-
-`createPheromoneMatrix(vertexCount, initialPheromone)` cria uma matriz quadrada de 4 a 12 vértices com **τ₀ igual em todas as arestas**, simetria τ(i,j)=τ(j,i) e diagonal **zero**. Aceita τ₀ entre 0,01 e 100. `validatePheromoneMatrix` verifica dimensões, simetria, finitude, diagonal zero e piso de pelo menos 10⁻¹² fora da diagonal. **O piso também deverá ser aplicado nas atualizações futuras (Etapa 04).**
-
-### 2. Pesos e probabilidades
-
-`calculateTransitionWeights(graph, matrix, currentId, visitedIds, alpha, beta)` calcula para cada destino não visitado:
-
-```text
-w(i,j) = τ(i,j)^α × (1 / d(i,j))^β
+```bash
+git clone https://github.com/jvrosal/Colonia_de_formigas-IA.git
 ```
 
-`calculateProbabilities(weightedCandidates)` normaliza **somente os candidatos permitidos**:
+Entre na pasta:
 
-```text
-p(i,j) = w(i,j) / Σ w(i,u)
+```bash
+cd Colonia_de_formigas-IA
 ```
 
-`α` e `β` pertencem a [0,5], incluindo zero. Com α=0 não há influência do feromônio; β=0 elimina a influência da distância; ambos zero geram distribuição uniforme. A normalização divide primeiro pelo maior peso para evitar transbordamento da soma, sem alterar proporções. A ordem dos candidatos segue a ordem estável do grafo.
+Inicie um servidor local:
 
-### 3. Sorteios por semente
+```bash
+python -m http.server 8000
+```
 
-`createSeededRandom(seed)` disponibiliza `next()`, `reset()` e `getState()`. Foi implementado o gerador determinístico **Mulberry32**, sem `Math.random()`; a semente deve ser um inteiro seguro do JavaScript. Internamente são utilizados os 32 bits inferiores da semente (módulo 2³²). A mesma semente, algoritmo e ordem de chamadas geram a mesma sequência no mesmo sistema.
+No Windows, também pode utilizar:
 
-`weightedRandomChoice(candidates, probabilities, rng)` usa uma soma cumulativa e **não escolhe sempre o maior peso**. Retorna `{candidate, index, randomValue}` para rastreamento futuro.
+```bash
+py -m http.server 8000
+```
 
-`previewTransition(...)` integra **uma única escolha** e retorna candidatos com pesos/probabilidades e o sorteio realizado, sem construir rota nem modificar feromônios.
+Abra no navegador:
 
-**Atenção à independência:** a prévia visual usa um **gerador separado** do motor futuro. Quando a simulação existir, ela deverá criar e manter seu próprio RNG para todos os sorteios das formigas. Mudanças na apresentação visual não poderão avançar esse RNG.
+http://localhost:8000
 
-### 4. Prévia na interface
+O servidor local é utilizado para carregar corretamente os módulos JavaScript.
 
-Logo abaixo da matriz de distâncias, a interface mostra:
+## 7. Como utilizar
 
-- Matriz inicial numérica de feromônios (sem aplicar evaporação ou depósitos).
-- Todos os candidatos disponíveis a partir do depósito, com distância, τ₀, peso e probabilidade.
-- Um único sorteio reprodutível com a semente 42, claramente marcado como demonstração, **não como execução de rota**.
+1. Configure os vértices e o depósito.
+2. Defina os parâmetros do algoritmo.
+3. Clique em Aplicar cenário.
+4. Utilize Executar para iniciar a simulação.
+5. Utilize Pausar para interromper temporariamente.
+6. Utilize Avançar para completar uma iteração.
+7. Consulte as métricas, a melhor rota e o histórico.
+8. Utilize Reiniciar para retornar ao estado inicial.
 
-Os cálculos usam precisão completa (`Number`); o arredondamento ocorre somente na visualização.
+Alterações nos dados ou parâmetros exigem reinício da simulação.
 
-## Testes — entradas, parâmetros, saídas e conclusões
+## 8. Testes automatizados
 
-Execute `npm test` para reproduzir todos os testes. No ambiente de desenvolvimento foram aprovados **69/69 testes**, dos quais **31** são da Etapa 02 e **38** são regressões das etapas anteriores.
+Execute:
 
-### Seção 6.2 do enunciado: probabilidades de escolha
+```bash
+npm test
+```
 
-**Entradas:** A=(0,0), B=(3,0), C=(3,4), D=(0,4), τ(i,j)=1 em cada aresta, α=1 e β=2.
+Ou:
 
-| Decisão | Peso calculado | Probabilidade esperada e obtida |
-|---|---:|---:|
-| A → B | 1/9 | 400/769 ≈ 0,520156 |
-| A → C | 1/25 | 144/769 ≈ 0,187256 |
-| A → D | 1/16 | 225/769 ≈ 0,292588 |
-| B → C (A e B visitados) | 1/16 | 25/41 ≈ 0,609756 |
-| B → D (A e B visitados) | 1/25 | 16/41 ≈ 0,390244 |
+```bash
+node --test
+```
 
-**Conclusão:** todas as probabilidades foram confirmadas com tolerância absoluta de 0,000001. Também passaram os casos α=β=0 (uniforme), somente um candidato (p=1), α=0, β=0 e rejeição de candidatos já visitados.
+A suíte atual contém 87 testes automatizados, abrangendo as Etapas 00 a 05 e verificações estruturais da Etapa 06.
 
-### Sorteio e reprodutibilidade
+### 8.1. Instância de referência
 
-**Entradas:** probabilidades 400/769, 144/769 e 225/769, gerador Mulberry32 com sementes controladas.
+Vértices:
 
-**Saídas e verificações realizadas:**
+- A = (0,0)
+- B = (3,0)
+- C = (3,4)
+- D = (0,4)
 
-- Sorteios forçados com valores 0, 0,5202, 0,9 e 0,999999 resultaram respectivamente em B, C, D e D.
-- Probabilidade zero nunca é escolhida, mesmo quando o valor sorteado é zero.
-- A sequência de 100 valores para a semente 42 foi idêntica entre duas instâncias independentes.
-- Chamar `reset()` produziu novamente a mesma sequência de 30 valores para sementes 0, −42 e 42.
-- Foram verificados 10.000 valores pseudoaleatórios dentro de [0,1).
-- Uma simulação estatística de 30.000 sorteios com a semente 1234 confirmou frequências próximas das probabilidades, dentro de uma diferença de 0,015.
-- Probabilidades inválidas, sementes não inteiras, assimetrias e matrizes inválidas são rejeitadas.
+Depósito: A.
 
-**Conclusão:** o núcleo probabilístico permite exploração estocástica reprodutível e permanece independente do estado visual. A reprodução de um **histórico completo de iterações** será testada após a implementação do motor na Etapa 05.
+Distâncias:
 
-### Testes de integração e regressão
+| Aresta | Distância |
+|---|---:|
+| AB | 3 |
+| AC | 5 |
+| AD | 4 |
+| BC | 4 |
+| BD | 5 |
+| CD | 3 |
 
-**Entradas:** cenário inicial de cinco vértices e parâmetros 10 formigas, 30 iterações, α=1, β=2, ρ=50%, τ₀=1, Q=14 e semente 42.
+As seis rotas possíveis possuem distâncias:
 
-**Saídas obtidas:** cinco vértices, dez arestas, cinco linhas da matriz de feromônios, quatro candidatos a partir de A e uma escolha demonstrativa de **C** na semente 42 (esta escolha não estabelece um percurso completo). Os controles permanecem corretamente bloqueados e a melhor distância informa “Ainda não calculada”.
+- A-B-C-D-A: 14
+- A-B-D-C-A: 16
+- A-C-B-D-A: 18
+- A-C-D-B-A: 16
+- A-D-B-C-A: 18
+- A-D-C-B-A: 14
 
-A interface foi examinada via Chromium em três tamanhos: 1440×900, 768×1024 e 390×844; nenhum erro JavaScript nem rolagem horizontal indevida foi observado. O ambiente de avaliação bloqueou navegação HTTP direta, então a verificação visual utilizou o código dos módulos inserido no navegador; **imports ES reais foram testados pelo Node.js**. Recomenda-se também executar manualmente no navegador com `python -m http.server` no seu computador.
+O comprimento ótimo é 14.
 
-## O que ainda falta
+Os testes verificam os comprimentos e a validade das rotas.
 
-- **Etapa 03:** construir rotas completas por formiga usando essas probabilidades e um RNG único por execução.
-- **Etapa 04:** evaporar feromônios e somar depósitos de todas as formigas, **apenas depois** que terminarem as rotas.
-- **Etapa 05:** executar iterações, controlar estados e melhores rotas.
-- **Etapa 06:** habilitar edição de vértices e parâmetros, controles e validação da interface.
-- **Etapa 07:** atualizar a representação visual dos feromônios e destacar a melhor rota.
-- **Etapa 08:** métricas, histórico e logs completos.
-- **Etapa 09:** demais testes e análise obrigatória (6.3 a 6.5).
-- **Etapa 10:** README final, repositório público e publicação no GitHub Pages.
+### 8.2. Probabilidades
 
-**Autores:** a preencher antes da entrega.  
-**Link do GitHub Pages:** a adicionar na Etapa 10.
+Configuração:
+
+- τ = 1
+- α = 1
+- β = 2
+
+Probabilidades a partir do vértice A:
+
+| Destino | Probabilidade |
+|---|---:|
+| B | 400/769 |
+| C | 144/769 |
+| D | 225/769 |
+
+Os testes verificam esses valores com tolerância de 0,000001.
+
+Também são verificados os casos α = 0, β = 0 e candidatos únicos.
+
+### 8.3. Evaporação e depósito
+
+Configuração:
+
+- τ₀ = 1
+- ρ = 50%
+- Q = 14
+- Rota: A-B-C-D-A
+
+Após a primeira iteração:
+
+- AB = BC = CD = AD = 1,5
+- AC = BD = 0,5
+
+Após uma segunda iteração com a mesma rota:
+
+- Arestas do perímetro: 1,75
+- Diagonais: 0,25
+
+Com duas formigas percorrendo a mesma rota na primeira iteração:
+
+- Arestas do perímetro: 2,5
+- Diagonais: 0,5
+
+Esses valores são verificados pelos testes automatizados.
+
+### 8.4. Execução completa
+
+Configuração de referência:
+
+- Depósito: A
+- Formigas: 10
+- Iterações: 30
+- α = 1
+- β = 2
+- ρ = 50%
+- τ₀ = 1
+- Q = 14
+- Semente: 42
+
+A suíte verifica:
+
+- Existência de 30 registros.
+- Rotas completas e válidas.
+- Reprodutibilidade com a mesma semente.
+- Preservação do resultado ao avançar e continuar.
+- Melhor distância acumulada não crescente.
+- Reinício correto do estado.
+- Uso dos mesmos feromônios pelas formigas de cada iteração.
+
+Encontrar o ótimo em todas as execuções não é obrigatório.
+
+### 8.5. Comparação de parâmetros
+
+Os testes incluem execuções com:
+
+- β = 0
+- β = 2
+- Sementes 1, 2, 3, 4 e 5
+
+Ainda é necessário registrar no relatório final as médias das melhores distâncias e quantas execuções atingiram o ótimo de 14 em cada configuração.
+
+## 9. Situação atual
+
+Implementadas:
+
+- Etapa 00: estrutura inicial.
+- Etapa 01: grafo e distâncias.
+- Etapa 02: probabilidades e sorteios.
+- Etapa 03: rotas completas.
+- Etapa 04: evaporação e depósitos.
+- Etapa 05: motor de simulação.
+- Etapa 06: integração inicial da interface.
+
+Pendências para a entrega final:
+
+- Validar manualmente todos os controles no navegador.
+- Revisar visualização dos feromônios e legenda.
+- Conferir os logs detalhados de cada iteração.
+- Registrar resultados quantitativos dos testes comparativos.
+- Verificar a aplicação em diferentes tamanhos de tela.
+- Publicar a aplicação no GitHub Pages.
+- Completar a identificação dos integrantes.
+
+## 10. Repositório
+
+https://github.com/jvrosal/Colonia_de_formigas-IA
+
+## 11. Autores
+
+Benjamim Pessoa Vale Filho
+Gustavo Bastos Ribeiro Carvalho
+João Vinicio Teles Rosal
+
+Universidade Federal do Piauí — UFPI
+
+Disciplina: Inteligência Artificial
+
+Período: 2026.2
