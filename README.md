@@ -136,6 +136,16 @@ Recursos implementados:
 
 A interface utiliza o motor de simulação implementado na Etapa 05.
 
+### Etapa 07 — Visualização da convergência
+
+- Atualização do grafo a cada iteração com os feromônios calculados.
+- Destaque da melhor rota acumulada.
+- Consulta da distância e do feromônio de cada aresta.
+- Gráfico de convergência com a melhor distância acumulada e a distância média por iteração.
+- Atualização do gráfico durante a execução, avanço manual e retomada.
+
+O gráfico utiliza os dados registrados pelo motor de simulação, sem recalcular ou modificar os resultados do algoritmo.
+
 ## 4. Parâmetros
 
 | Parâmetro | Intervalo |
@@ -183,6 +193,7 @@ Colonia_de_formigas-IA/
 │       ├── forms.js
 │       ├── dashboard.js
 │       ├── graph-view.js
+│       ├── convergence-chart.js
 │       ├── distance-matrix.js
 │       └── probability-preview.js
 │
@@ -383,12 +394,13 @@ Implementadas:
 - Etapa 03: rotas completas.
 - Etapa 04: evaporação e depósitos.
 - Etapa 05: motor de simulação.
-- Etapa 06: integração inicial da interface.
+- Etapa 06: interface interativa e controles.
+- Etapa 07: visualização dinâmica e gráfico de convergência.
 
 Pendências para a entrega final:
 
 - Validar manualmente todos os controles no navegador.
-- Revisar visualização dos feromônios e legenda.
+- Validar visualização dos feromônios e gráfico de convergência no navegador.
 - Conferir os logs detalhados de cada iteração.
 - Registrar resultados quantitativos dos testes comparativos.
 - Verificar a aplicação em diferentes tamanhos de tela.
@@ -402,7 +414,9 @@ https://github.com/jvrosal/Colonia_de_formigas-IA
 ## 11. Autores
 
 Benjamim Pessoa Vale Filho
+
 Gustavo Bastos Ribeiro Carvalho
+
 João Vinicio Teles Rosal
 
 Universidade Federal do Piauí — UFPI
