@@ -25,6 +25,8 @@ import {
   renderInitialGraphPreview
 } from "./ui/graph-view.js";
 
+import { renderConvergenceChart } from "./ui/convergence-chart.js";
+
 import {
   renderDistanceMatrix
 } from "./ui/distance-matrix.js";
@@ -282,6 +284,11 @@ export function initializeApp(root = document) {
 
     renderHistory(state);
     renderLogs(state);
+
+    renderConvergenceChart(
+      get("convergence-chart"),
+      state.history
+    );
   }
 
   function renderScenario() {

@@ -161,6 +161,7 @@ test("10 · arquivos obrigatórios da fundação existem", async () => {
     "js/core/constants.js",
     "js/ui/forms.js",
     "js/ui/graph-view.js",
+    "js/ui/convergence-chart.js",
     "js/ui/dashboard.js",
     "README.md",
     "package.json"
@@ -203,6 +204,7 @@ test("12 · painel contém regiões e controles da simulação", async () => {
     "depot-select",
     "parameter-fields",
     "graph-preview",
+    "convergence-chart",
     "current-iteration",
     "best-distance",
     "iteration-distance",
@@ -242,6 +244,7 @@ test("13 · projeto não usa bibliotecas externas", async () => {
     "js/app.js",
     "js/ui/forms.js",
     "js/ui/graph-view.js",
+    "js/ui/convergence-chart.js",
     "js/ui/dashboard.js",
     "js/core/constants.js"
   ];
@@ -265,7 +268,7 @@ test("14 · README registra a etapa e instruções de uso", async () => {
 
   assert.match(
     readme,
-    /Etapa 06|simulação interativa/i
+    /Etapa 07|visualização dinâmica|gráfico de convergência/i
   );
 
   assert.match(
