@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -19,20 +20,26 @@
           <p>Planejamento de rotas de entrega com Ant System</p>
         </div>
         <div class="header-status">
-          <span class="milestone">ETAPA 02 / PROBABILIDADES</span>
-          <span id="app-status" class="status" role="status" aria-live="polite">Carregando estrutura…</span>
+          <span class="milestone">ETAPA 06 / SIMULAÇÃO</span>
+          <span id="app-status" class="status" role="status" aria-live="polite">
+            Carregando estrutura…
+          </span>
         </div>
       </div>
     </header>
 
     <main class="workspace">
       <div id="initialization-error" class="error-banner" role="alert" hidden></div>
+
       <div class="intro-row">
         <div>
           <h2>Área de simulação</h2>
-          <p>Grafo e distâncias validados; feromônio inicial, probabilidades e sorteio com semente implementados. A construção das rotas virá na próxima etapa.</p>
+          <p>Configure os pontos e parâmetros, execute o Ant System e acompanhe o progresso a cada iteração.</p>
         </div>
-        <span class="phase-tag"><span class="phase-dot" aria-hidden="true"></span> Probabilidades prontas</span>
+        <span class="phase-tag">
+          <span class="phase-dot" aria-hidden="true"></span>
+          Simulador interativo
+        </span>
       </div>
 
       <div class="workspace-grid">
@@ -43,24 +50,45 @@
                 <span class="section-kicker">01 / CENÁRIO</span>
                 <h3 id="vertices-heading">Pontos de entrega</h3>
               </div>
-              <span class="count-pill"><span id="vertex-count">—</span> vértices</span>
+              <span class="count-pill">
+                <span id="vertex-count">—</span> vértices
+              </span>
             </div>
 
             <div class="table-wrap">
               <table class="vertices-table">
                 <caption class="sr-only">Vértices e coordenadas do cenário inicial</caption>
                 <thead>
-                  <tr><th scope="col">ID</th><th scope="col">X</th><th scope="col">Y</th><th scope="col">Tipo</th></tr>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">X</th>
+                    <th scope="col">Y</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Ação</th>
+                  </tr>
                 </thead>
                 <tbody id="vertices-body"></tbody>
               </table>
             </div>
 
+            <div class="vertex-actions">
+              <button id="add-vertex" type="button" class="btn">
+                + Adicionar vértice
+              </button>
+              <button id="apply-scenario" type="button" class="btn btn-primary">
+                Aplicar cenário
+              </button>
+            </div>
+
             <div class="depot-field">
               <label for="depot-select">Depósito selecionado</label>
-              <select id="depot-select" disabled aria-describedby="scenario-note"></select>
+              <select id="depot-select" aria-describedby="scenario-note"></select>
             </div>
-            <p id="scenario-note" class="helper-text">Vértices e depósito validados matematicamente. Cadastro, edição e remoção serão habilitados na Etapa 06.</p>
+
+            <p id="scenario-note" class="helper-text">
+              Entre 4 e 12 pontos, coordenadas de 0 a 1000 (até duas casas).
+              Clique em Aplicar cenário após editar.
+            </p>
           </section>
 
           <section class="panel" aria-labelledby="parameters-heading">
@@ -69,10 +97,14 @@
                 <span class="section-kicker">02 / CONFIGURAÇÃO</span>
                 <h3 id="parameters-heading">Parâmetros iniciais</h3>
               </div>
-              <span class="read-only-tag">Pré-definidos</span>
+              <span class="read-only-tag">Editáveis</span>
             </div>
+
             <div id="parameter-fields" class="parameters-grid"></div>
-            <p id="params-note" class="helper-text">Campos somente de leitura nesta etapa. A edição será habilitada na Etapa 06.</p>
+
+            <p id="params-note" class="helper-text">
+              Ao editar um parâmetro, a execução é reiniciada antes da próxima iteração.
+            </p>
           </section>
         </aside>
 
@@ -81,28 +113,65 @@
             <div class="panel-header graph-header">
               <div>
                 <span class="section-kicker">03 / VISUALIZAÇÃO</span>
-                <h3 id="graph-heading">Grafo do cenário inicial</h3>
+                <h3 id="graph-heading">Grafo das entregas</h3>
               </div>
               <span id="graph-summary" class="graph-count">—</span>
             </div>
+
             <div class="graph-stage">
-              <svg id="graph-preview" xmlns="http://www.w3.org/2000/svg" aria-label="Carregando prévia do grafo"></svg>
+              <svg
+                id="graph-preview"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-label="Carregando prévia do grafo"
+              ></svg>
             </div>
+
             <div class="legend" aria-label="Legenda da prévia">
-              <span><i class="legend-dot legend-dot--depot" aria-hidden="true"></i>Depósito</span>
-              <span><i class="legend-dot" aria-hidden="true"></i>Entrega</span>
-              <span><i class="legend-line" aria-hidden="true"></i>Arestas</span>
+              <span>
+                <i class="legend-dot legend-dot--depot" aria-hidden="true"></i>
+                Depósito
+              </span>
+              <span>
+                <i class="legend-dot" aria-hidden="true"></i>
+                Entrega
+              </span>
+              <span>
+                <i class="legend-line" aria-hidden="true"></i>
+                Feromônio (espessura)
+              </span>
+              <span>
+                <i class="legend-line legend-line--best" aria-hidden="true"></i>
+                Melhor rota
+              </span>
             </div>
-            <div class="panel-footnote">Grafo gerado a partir do modelo matemático. Passe o cursor nas arestas para consultar a distância. A atualização dinâmica dos feromônios e o destaque da melhor rota serão incluídos na Etapa 07.</div>
+
+            <div class="panel-footnote">
+              O grafo exibe a melhor rota e os feromônios atualizados.
+              Passe o cursor nas arestas para consultar distância e feromônio.
+            </div>
+
             <div class="math-preview" aria-labelledby="distance-heading">
               <div class="math-preview-heading">
                 <h4 id="distance-heading">Matriz de distâncias</h4>
                 <span class="read-only-tag">Euclidiana · calculada</span>
               </div>
-              <p class="helper-text">Valores visuais arredondados; os cálculos preservam a precisão original. A diagonal é zero.</p>
+
+              <p class="helper-text">
+                Valores visuais arredondados; os cálculos preservam a precisão original.
+                A diagonal é zero.
+              </p>
+
               <div id="distance-matrix" class="distance-table-wrap"></div>
-              <p class="example-route"><strong>Exemplo de percurso (não otimizado):</strong> <span id="example-route">—</span><span class="example-length">Distância total: <strong id="example-distance">—</strong></span></p>
+
+              <p class="example-route">
+                <strong>Exemplo de percurso (não otimizado):</strong>
+                <span id="example-route">—</span>
+                <span class="example-length">
+                  Distância total: <strong id="example-distance">—</strong>
+                </span>
+              </p>
             </div>
+
             <div id="probability-preview"></div>
           </section>
 
@@ -112,15 +181,31 @@
                 <span class="section-kicker">04 / SIMULAÇÃO</span>
                 <h3 id="controls-heading">Controles</h3>
               </div>
-              <span class="state-pill">Estado: <strong id="simulation-state">—</strong></span>
+              <span class="state-pill">
+                Estado: <strong id="simulation-state">—</strong>
+              </span>
             </div>
+
             <div class="controls-row">
-              <button type="button" class="btn btn-primary" disabled title="Será habilitado na Etapa 06">▶ Executar</button>
-              <button type="button" class="btn" disabled title="Será habilitado na Etapa 06">Ⅱ Pausar</button>
-              <button type="button" class="btn" disabled title="Será habilitado na Etapa 06">⏭ Avançar 1 iteração</button>
-              <button type="button" class="btn" disabled title="Será habilitado na Etapa 06">↺ Reiniciar</button>
+              <button id="run-button" type="button" class="btn btn-primary">
+                ▶ Executar
+              </button>
+              <button id="pause-button" type="button" class="btn" disabled>
+                Ⅱ Pausar
+              </button>
+              <button id="step-button" type="button" class="btn">
+                ⏭ Avançar 1 iteração
+              </button>
+              <button id="reset-button" type="button" class="btn">
+                ↺ Reiniciar
+              </button>
             </div>
-            <p class="helper-text">Controles desabilitados propositalmente. A construção de rotas e o motor de simulação serão implementados nas Etapas 03 a 05.</p>
+
+            <p class="helper-text">
+              Executar inicia ou retoma, Pausar preserva a iteração atual,
+              Avançar executa uma iteração e Reiniciar restaura feromônios,
+              histórico e semente.
+            </p>
           </section>
 
           <section class="metrics-grid" aria-label="Indicadores da simulação">
@@ -129,16 +214,19 @@
               <strong id="current-iteration" class="metric-value">—</strong>
               <span class="metric-caption">De acordo com o limite configurado</span>
             </article>
+
             <article class="metric-card">
               <span class="metric-label">Melhor distância acumulada</span>
               <strong id="best-distance" class="metric-value metric-value--long">—</strong>
               <span class="metric-caption">Disponível após executar</span>
             </article>
+
             <article class="metric-card">
               <span class="metric-label">Menor distância da iteração</span>
               <strong id="iteration-distance" class="metric-value">—</strong>
               <span class="metric-caption">Nenhuma iteração concluída</span>
             </article>
+
             <article class="metric-card">
               <span class="metric-label">Média das distâncias</span>
               <strong id="average-distance" class="metric-value">—</strong>
@@ -152,13 +240,17 @@
                 <span class="section-kicker">05 / RESULTADOS</span>
                 <h3 id="history-heading">Histórico de iterações</h3>
               </div>
-              <span class="read-only-tag">Sem dados</span>
+              <span id="history-count" class="read-only-tag">Sem dados</span>
             </div>
-            <div class="empty-state">
-              <span class="empty-icon" aria-hidden="true">▦</span>
-              <div><strong>Nenhuma iteração concluída</strong><p>As métricas e o histórico serão registrados quando o algoritmo estiver disponível.</p></div>
+
+            <div id="history-container" class="history-container">
+              <p class="helper-text">Nenhuma iteração concluída.</p>
             </div>
-            <div class="best-route-row"><strong>Melhor rota:</strong> <span id="best-route">—</span></div>
+
+            <div class="best-route-row">
+              <strong>Melhor rota:</strong>
+              <span id="best-route">—</span>
+            </div>
           </section>
 
           <section class="panel" aria-labelledby="logs-heading">
@@ -167,19 +259,28 @@
                 <span class="section-kicker">06 / TRANSPARÊNCIA</span>
                 <h3 id="logs-heading">Logs da execução</h3>
               </div>
-              <span class="read-only-tag">Sem dados</span>
+              <span id="logs-count" class="read-only-tag">Sem dados</span>
             </div>
-            <div class="empty-state empty-state--small">
-              <span class="empty-icon" aria-hidden="true">≡</span>
-              <div><strong>Aguardando implementação</strong><p>As escolhas probabilísticas e as atualizações de feromônio aparecerão aqui em etapas futuras.</p></div>
+
+            <div id="logs-container">
+              <p class="helper-text">Nenhuma iteração concluída.</p>
             </div>
           </section>
         </div>
       </div>
     </main>
+
     <footer class="site-footer">
       <span>UFPI · Atividade prática de Inteligência Artificial</span>
-      <span>Repositório público: link a ser adicionado na Etapa 10</span>
+      <span>
+        <a
+          href="https://github.com/jvrosal/Colonia_de_formigas-IA"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Repositório no GitHub
+        </a>
+      </span>
     </footer>
   </div>
 </body>
