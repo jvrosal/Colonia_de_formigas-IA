@@ -3,7 +3,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 const WIDTH = 760;
 const HEIGHT = 300;
-const MARGIN = { top: 20, right: 24, bottom: 48, left: 66 };
+const MARGIN = { top: 20, right: 24, bottom: 48, left: 96 };
 
 function svgNode(name, attributes = {}, text = "") {
   const node = document.createElementNS(SVG_NS, name);

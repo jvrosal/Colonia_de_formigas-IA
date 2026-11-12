@@ -8,7 +8,8 @@ const VIEW_WIDTH = 840;
 const VIEW_HEIGHT = 460;
 const PADDING = 66;
 const MIN_EDGE_WIDTH = 1.5;
-const MAX_EDGE_WIDTH = 9;
+const MAX_EDGE_WIDTH = 12;
+const NODE_RADIUS = 17;
 
 function svgElement(name, attributes = {}, text = "") {
   const element = document.createElementNS(SVG_NS, name);
@@ -124,15 +125,21 @@ export function renderInitialGraphPreview(
     }
   }
 
+  const bestLayer = svgElement("g", {
+    class: "graph-preview-best"
+  });
+
+  const hitLayer = svgElement("g", {
+    class: "graph-preview-hits"
+  });
+
   for (const edge of graphEdges) {
     const from = coordinatesById.get(edge.fromId);
     const to = coordinatesById.get(edge.toId);
+    const endpoints = { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
 
     const line = svgElement("line", {
-      x1: from.x,
-      y1: from.y,
-      x2: to.x,
-      y2: to.y,
+      ...endpoints,
       class: "graph-preview-edge",
       "data-edge": `${edge.fromId}-${edge.toId}`,
       "data-distance": edge.distance
@@ -156,17 +163,21 @@ export function renderInitialGraphPreview(
         (MAX_EDGE_WIDTH - MIN_EDGE_WIDTH) * ratio;
 
       line.style.strokeWidth = `${thickness.toFixed(2)}px`;
-      line.style.strokeOpacity = (0.35 + 0.65 * ratio).toFixed(2);
+      line.style.strokeOpacity = (0.25 + 0.75 * ratio).toFixed(2);
       line.dataset.pheromone = String(pheromone);
+    }
 
-      const edgeKey = [
-        edge.fromId,
-        edge.toId
-      ].sort().join("|");
+    edges.append(line);
 
-      line.style.stroke = bestEdges.has(edgeKey)
-        ? "#15966d"
-        : "#9eb7d7";
+    const edgeKey = [edge.fromId, edge.toId].sort().join("|");
+
+    if (bestEdges.has(edgeKey)) {
+      bestLayer.append(
+        svgElement("line", {
+          ...endpoints,
+          class: "graph-preview-best-edge"
+        })
+      );
     }
 
     const distanceText = edge.distance.toLocaleString(
@@ -175,49 +186,51 @@ export function renderInitialGraphPreview(
     );
 
     let tooltip =
-      `${edge.fromId} ↔ ${edge.toId} · Distância: ${distanceText}`;
+      `Aresta ${edge.fromId}–${edge.toId}\nDistância: ${distanceText}`;
 
     if (pheromone !== undefined) {
-      tooltip += ` · Feromônio: ${pheromone.toLocaleString(
+      tooltip += `\nFeromônio: ${pheromone.toLocaleString(
         "pt-BR",
         { maximumFractionDigits: 8 }
       )}`;
     }
 
-    line.append(
-      svgElement("title", {}, tooltip)
-    );
+    const hit = svgElement("line", {
+      ...endpoints,
+      class: "graph-preview-hit"
+    });
 
-    edges.append(line);
+    hit.append(svgElement("title", {}, tooltip));
+    hitLayer.append(hit);
   }
 
   for (const point of coordinates) {
     const isDepot = point.id === depotId;
 
     const group = svgElement("g", {
-      "data-vertex": point.id
+      "data-vertex": point.id,
+      class: isDepot
+        ? "graph-preview-vertex graph-preview-vertex--depot"
+        : "graph-preview-vertex"
     });
 
-    if (isDepot) {
-      group.append(
-        svgElement("circle", {
-          cx: point.x,
-          cy: point.y,
-          r: 31,
-          class: "graph-preview-depot-ring"
-        })
-      );
-    }
-
+    // Depósito em quadrado e entregas em círculo:
+    // o tipo é reconhecível pela forma, não apenas pela cor.
     group.append(
-      svgElement("circle", {
-        cx: point.x,
-        cy: point.y,
-        r: 22,
-        class: isDepot
-          ? "graph-preview-node graph-preview-node--depot"
-          : "graph-preview-node"
-      })
+      isDepot
+        ? svgElement("rect", {
+            x: point.x - NODE_RADIUS,
+            y: point.y - NODE_RADIUS,
+            width: NODE_RADIUS * 2,
+            height: NODE_RADIUS * 2,
+            class: "graph-preview-node graph-preview-node--depot"
+          })
+        : svgElement("circle", {
+            cx: point.x,
+            cy: point.y,
+            r: NODE_RADIUS,
+            class: "graph-preview-node"
+          })
     );
 
     group.append(
@@ -233,10 +246,18 @@ export function renderInitialGraphPreview(
       )
     );
 
+    group.append(
+      svgElement(
+        "title",
+        {},
+        isDepot ? `Depósito ${point.id}` : `Entrega ${point.id}`
+      )
+    );
+
     nodes.append(group);
   }
 
-  svg.append(edges, nodes);
+  svg.append(edges, bestLayer, hitLayer, nodes);
 
   return { maxPheromone };
 }

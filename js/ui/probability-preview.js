@@ -28,7 +28,7 @@ export function renderInitialProbabilityPreview(container, graph, parameters) {
   const heading = make("div", "math-preview-heading");
   const title = make("h4", "", "Feromônio inicial e escolha probabilística");
   title.id = "probability-heading";
-  heading.append(title, make("span", "read-only-tag", "Prévia · sem iterações"));
+  heading.append(title, make("span", "read-only-tag", "Antes da primeira iteração"));
   section.append(heading);
   section.append(make("p", "helper-text", `Todos os pares de vértices começam com τ₀ = ${formatNumber(parameters.initialPheromone)}. A diagonal não possui feromônio.`));
 
@@ -91,7 +91,7 @@ export function renderInitialProbabilityPreview(container, graph, parameters) {
   description.id = "probability-sample";
   description.dataset.selectedId = choice.candidate.id;
   description.dataset.randomValue = String(choice.randomValue);
-  description.textContent = `Exemplo de sorteio (semente ${parameters.seed}): ${graph.depotId} → ${choice.candidate.id} · valor sorteado ${formatNumber(choice.randomValue, 8)}. Esta demonstração usa um gerador separado e NÃO executa uma rota ou consome a semente da futura simulação.`;
+  description.textContent = `Exemplo de sorteio com a semente ${parameters.seed}: valor sorteado ${formatNumber(choice.randomValue, 8)}, escolhido ${graph.depotId} → ${choice.candidate.id}. Este exemplo usa um gerador separado: ele não executa uma rota nem altera os sorteios da simulação.`;
   section.append(description);
   container.append(section);
 }

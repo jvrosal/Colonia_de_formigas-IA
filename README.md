@@ -34,6 +34,10 @@ O projeto utiliza:
 
 Não são utilizadas bibliotecas externas de otimização ou inteligência artificial.
 
+Recurso visual de terceiros:
+
+- Fonte [Recursive](https://github.com/arrowtype/recursive) (licença SIL Open Font License), usada em toda a interface. Os arquivos ficam na pasta `fonts/` do projeto, sem dependência de serviço externo.
+
 A aplicação funciona no navegador, sem servidor de aplicação.
 
 ## 3. Funcionalidades implementadas
@@ -194,6 +198,10 @@ Colonia_de_formigas-IA/
 ├── css/
 │   └── styles.css
 │
+├── fonts/
+│   ├── recursive-latin.woff2
+│   └── recursive-latin-ext.woff2
+│
 ├── js/
 │   ├── app.js
 │   │
@@ -211,7 +219,8 @@ Colonia_de_formigas-IA/
 │       ├── graph-view.js
 │       ├── convergence-chart.js
 │       ├── distance-matrix.js
-│       └── probability-preview.js
+│       ├── probability-preview.js
+│       └── tabs.js
 │
 └── tests/
     ├── stage00.test.js

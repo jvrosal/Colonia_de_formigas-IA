@@ -122,6 +122,12 @@ export function renderEditableVertices(
       input.className = "vertex-input";
       input.dataset.field = field;
       input.value = value;
+      input.setAttribute(
+        "aria-label",
+        field === "id"
+          ? `Identificador do vértice ${vertex.id}`
+          : `Coordenada ${field} do vértice ${vertex.id}`
+      );
       input.required = true;
 
       if (field !== "id") {

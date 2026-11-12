@@ -40,6 +40,8 @@ import {
   renderInitialProbabilityPreview
 } from "./ui/probability-preview.js";
 
+import { initTabs } from "./ui/tabs.js";
+
 const format = value => value.toLocaleString(
   "pt-BR",
   { maximumFractionDigits: 4 }
@@ -109,11 +111,11 @@ export function initializeApp(root = document) {
     historyBody = null;
 
     get("history-container").replaceChildren(
-      el("p", "Nenhuma iteração concluída.")
+      el("p", "Nenhuma iteração ainda. Clique em Executar ou em Avançar uma iteração.")
     );
 
     get("logs-container").replaceChildren(
-      el("p", "Nenhuma iteração concluída.")
+      el("p", "O registro de cada iteração aparece aqui depois que ela termina.")
     );
   }
 
@@ -182,7 +184,7 @@ export function initializeApp(root = document) {
       list.append(
         el(
           "li",
-          `Formiga ${index + 1}: ${ant.route.join(" → ")} · comprimento ${format(ant.length)}${isBest ? " (menor da iteração)" : ""}`
+          `Formiga ${index + 1}: ${ant.route.join(" → ")}, comprimento ${format(ant.length)}${isBest ? " (menor da iteração)" : ""}`
         )
       );
     });
@@ -204,7 +206,7 @@ export function initializeApp(root = document) {
         fragment.append(
           el(
             "p",
-            `Vértice atual ${step.currentId}: todos visitados · retorno obrigatório ${step.currentId} → ${step.chosenId}`
+            `Em ${step.currentId}, todos os vértices foram visitados. Retorno obrigatório: ${step.currentId} → ${step.chosenId}.`
           )
         );
         continue;
@@ -214,12 +216,12 @@ export function initializeApp(root = document) {
         .map(candidate =>
           `${candidate.id} (τ ${formatSig(candidate.pheromone)}; d ${format(candidate.distance)}; w ${formatSig(candidate.weight)}; p ${format(candidate.probability * 100)}%)`
         )
-        .join(" · ");
+        .join("; ");
 
       fragment.append(
         el(
           "p",
-          `Vértice atual ${step.currentId} · candidatos: ${candidates} · valor sorteado ${formatSig(step.randomValue)} → escolhido ${step.chosenId}`
+          `Em ${step.currentId}, candidatos: ${candidates}. Valor sorteado ${formatSig(step.randomValue)}, escolhido ${step.chosenId}.`
         )
       );
     }
@@ -263,7 +265,7 @@ export function initializeApp(root = document) {
       details.append(
         el(
           "summary",
-          `Iteração ${entry.iteration} · menor distância ${format(entry.iterationBestLength)} · média ${format(entry.meanLength)}`
+          `Iteração ${entry.iteration}: menor ${format(entry.iterationBestLength)}, média ${format(entry.meanLength)}`
         )
       );
 
@@ -307,10 +309,19 @@ export function initializeApp(root = document) {
     get("current-iteration").textContent =
       `${state.iteration} / ${config.iterations}`;
 
+    const progress = get("iteration-progress");
+    progress.max = config.iterations;
+    progress.value = state.iteration;
+
     get("best-distance").textContent =
       state.bestLength === null
         ? "Ainda não calculada"
         : format(state.bestLength);
+
+    get("best-distance").classList.toggle(
+      "is-empty",
+      state.bestLength === null
+    );
 
     const latest = uiHistory.at(-1);
 
@@ -327,7 +338,7 @@ export function initializeApp(root = document) {
     get("best-route").textContent =
       state.bestRoute
         ? state.bestRoute.join(" → ")
-        : "Nenhuma rota calculada";
+        : "Ainda não calculada";
 
     get("simulation-state").textContent =
       state.finished
@@ -381,6 +392,7 @@ export function initializeApp(root = document) {
     }
 
     get("pheromone-scale").textContent = scaleText;
+    get("pheromone-max").textContent = `τ ${format(maxPheromone)}`;
 
     renderConvergenceChart(
       get("convergence-chart"),
@@ -411,7 +423,7 @@ export function initializeApp(root = document) {
       String(graph.vertices.length);
 
     get("graph-summary").textContent =
-      `${graph.vertices.length} vértices · ${expectedEdgeCount(graph.vertices.length)} arestas`;
+      `${graph.vertices.length} vértices e ${expectedEdgeCount(graph.vertices.length)} arestas`;
 
     const example = [
       ...graph.vertices.map(v => v.id),
@@ -700,6 +712,8 @@ export function initializeApp(root = document) {
       hasPendingChanges = true;
     }
   );
+
+  initTabs(root.querySelector(".tabs"));
 
   renderInitialParameters(
     params,

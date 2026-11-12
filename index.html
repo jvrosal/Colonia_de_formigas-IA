@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,45 +5,68 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta
     name="description"
-    content="Simulador acadêmico de otimização de rotas utilizando o algoritmo Ant System."
+    content="Simulador acadêmico de otimização de rotas de entrega com o algoritmo Ant System."
   >
-  <meta name="theme-color" content="#30251c">
+  <meta name="theme-color" content="#1D2A2E">
   <title>Ant System | Simulador de rotas</title>
 
+  <link rel="preload" href="./fonts/recursive-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./css/styles.css">
   <script type="module" src="./js/app.js"></script>
 </head>
 
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <div class="brand-copy">
-        <span class="eyebrow">
-          UNIVERSIDADE FEDERAL DO PIAUÍ · INTELIGÊNCIA ARTIFICIAL · 2026.2
-        </span>
+  <a class="skip-link" href="#main">Ir para o conteúdo</a>
 
+  <!-- Barra fixa: título, controles e progresso da execução -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
         <h1>Ant System</h1>
+        <p>Rota de entregas por colônia de formigas</p>
+      </div>
 
-        <p>
-          Simulador de otimização de rotas por colônia de formigas
+      <div class="controls" role="group" aria-label="Controles da simulação">
+        <button id="run-button" type="button" class="btn btn-primary">
+          Executar
+        </button>
+        <button id="pause-button" type="button" class="btn" disabled>
+          Pausar
+        </button>
+        <button id="step-button" type="button" class="btn">
+          Avançar uma iteração
+        </button>
+        <button id="reset-button" type="button" class="btn btn-quiet">
+          Reiniciar
+        </button>
+      </div>
+
+      <div class="run-state">
+        <p class="run-iteration">
+          Iteração <strong id="current-iteration">—</strong>
+        </p>
+        <p class="run-mode">
+          <strong id="simulation-state">—</strong>
+          <span
+            id="app-status"
+            class="status"
+            role="status"
+            aria-live="polite"
+          >Carregando...</span>
         </p>
       </div>
-
-      <div class="header-status">
-        <span class="status-label">STATUS DA SIMULAÇÃO</span>
-        <span
-          id="app-status"
-          class="status"
-          role="status"
-          aria-live="polite"
-        >
-          Carregando...
-        </span>
-      </div>
     </div>
+
+    <progress
+      id="iteration-progress"
+      class="run-progress"
+      max="30"
+      value="0"
+      aria-label="Iterações concluídas"
+    ></progress>
   </header>
 
-  <main class="workspace">
+  <main id="main" class="page">
 
     <div
       id="initialization-error"
@@ -53,473 +75,252 @@
       hidden
     ></div>
 
-    <section class="intro-row">
-      <div>
-        <span class="section-kicker">AMBIENTE DE EXPERIMENTAÇÃO</span>
-        <h2>Simulação de rotas</h2>
-        <p>
-          Configure o cenário, ajuste os parâmetros e acompanhe
-          o comportamento da colônia ao longo das iterações.
-        </p>
-      </div>
-    </section>
+    <!-- Grafo e leitura da iteração -->
+    <section class="stage" aria-labelledby="graph-heading">
+      <figure class="stage-graph">
+        <div class="stage-head">
+          <h2 id="graph-heading">Rede de entregas</h2>
+          <span id="graph-summary" class="meta">—</span>
+        </div>
 
-    <div class="workspace-grid">
+        <div class="graph-frame">
+          <svg
+            id="graph-preview"
+            xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="Representação do grafo de entregas"
+          ></svg>
+        </div>
 
-      <!-- CONFIGURAÇÕES -->
+        <figcaption class="graph-key">
+          <ul class="legend" aria-label="Legenda do grafo">
+            <li><i class="key-depot" aria-hidden="true"></i>Depósito</li>
+            <li><i class="key-stop" aria-hidden="true"></i>Ponto de entrega</li>
+            <li><i class="key-best" aria-hidden="true"></i>Melhor rota encontrada</li>
+          </ul>
 
-      <aside class="settings-stack">
-
-        <section class="panel" aria-labelledby="vertices-heading">
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">01 · CENÁRIO</span>
-              <h3 id="vertices-heading">Pontos de entrega</h3>
-            </div>
-
-            <span class="count-pill">
-              <span id="vertex-count">—</span> vértices
+          <div class="pheromone-key">
+            <span class="pheromone-key-label">Feromônio na aresta</span>
+            <span class="pheromone-ramp" aria-hidden="true"></span>
+            <span class="pheromone-key-ends">
+              <span>pouco</span>
+              <span id="pheromone-max">—</span>
             </span>
           </div>
 
-          <div class="table-wrap">
+          <p id="pheromone-scale" class="pheromone-scale"></p>
+
+          <p class="graph-note">
+            Espessura e intensidade do âmbar são proporcionais a τ/τmáx
+            da iteração atual. Passe o cursor sobre uma aresta para ver
+            a distância e o feromônio exatos.
+          </p>
+        </figcaption>
+      </figure>
+
+      <aside class="readout" aria-label="Resultados da execução">
+        <h2 class="readout-title">Resultado até agora</h2>
+
+        <dl class="readout-list">
+          <div class="readout-item readout-item--route">
+            <dt>Melhor rota</dt>
+            <dd id="best-route" class="route-text">—</dd>
+          </div>
+
+          <div class="readout-item readout-item--primary">
+            <dt>Melhor distância acumulada</dt>
+            <dd id="best-distance">—</dd>
+          </div>
+
+          <div class="readout-item">
+            <dt>Menor distância da iteração</dt>
+            <dd id="iteration-distance">—</dd>
+          </div>
+
+          <div class="readout-item">
+            <dt>Média das formigas na iteração</dt>
+            <dd id="average-distance">—</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+
+    <!-- Configuração e convergência -->
+    <div class="workbench">
+      <section class="setup" aria-labelledby="setup-heading">
+        <h2 id="setup-heading">Cenário e parâmetros</h2>
+
+        <div class="setup-block">
+          <div class="block-head">
+            <h3 id="vertices-heading">
+              Vértices <span class="count">(<span id="vertex-count">—</span>)</span>
+            </h3>
+            <p id="scenario-note" class="hint">
+              De 4 a 12 vértices, coordenadas de 0 a 1000
+              com até duas casas decimais.
+            </p>
+          </div>
+
+          <div class="table-scroll">
             <table class="vertices-table">
               <caption class="sr-only">
                 Vértices e coordenadas do cenário
               </caption>
-
               <thead>
                 <tr>
                   <th scope="col">ID</th>
-                  <th scope="col">X</th>
-                  <th scope="col">Y</th>
+                  <th scope="col">x</th>
+                  <th scope="col">y</th>
                   <th scope="col">Tipo</th>
-                  <th scope="col">Ação</th>
+                  <th scope="col"><span class="sr-only">Ação</span></th>
                 </tr>
               </thead>
-
               <tbody id="vertices-body"></tbody>
             </table>
           </div>
 
-          <div class="vertex-actions">
-            <button
-              id="add-vertex"
-              type="button"
-              class="btn"
-            >
+          <div class="setup-row">
+            <button id="add-vertex" type="button" class="btn btn-quiet">
               Adicionar vértice
             </button>
 
-            <button
-              id="apply-scenario"
-              type="button"
-              class="btn btn-primary"
-            >
-              Aplicar cenário
-            </button>
-          </div>
-
-          <div class="depot-field">
-            <label for="depot-select">
-              Depósito de origem
-            </label>
-
-            <select id="depot-select"></select>
-          </div>
-
-          <p id="scenario-note" class="helper-text">
-            O cenário deve possuir entre 4 e 12 vértices.
-            As coordenadas devem estar entre 0 e 1000.
-          </p>
-        </section>
-
-        <section class="panel" aria-labelledby="parameters-heading">
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">02 · ALGORITMO</span>
-              <h3 id="parameters-heading">Parâmetros</h3>
-            </div>
-
-            <span class="read-only-tag">Configuração</span>
-          </div>
-
-          <div
-            id="parameter-fields"
-            class="parameters-grid"
-          ></div>
-
-          <p id="params-note" class="helper-text">
-            As alterações nos parâmetros exigem a reinicialização
-            da simulação.
-          </p>
-        </section>
-
-      </aside>
-
-      <!-- RESULTADOS -->
-
-      <div class="results-stack">
-
-        <!-- GRAFO -->
-
-        <section class="panel graph-panel" aria-labelledby="graph-heading">
-
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">03 · REPRESENTAÇÃO DO GRAFO</span>
-              <h3 id="graph-heading">Rede de entregas</h3>
-            </div>
-
-            <span id="graph-summary" class="graph-count">
-              —
-            </span>
-          </div>
-
-          <div class="graph-stage">
-            <svg
-              id="graph-preview"
-              xmlns="http://www.w3.org/2000/svg"
-              role="img"
-              aria-label="Representação do grafo de entregas"
-            ></svg>
-          </div>
-
-          <div class="legend">
-            <span>
-              <i class="legend-dot legend-dot--depot"></i>
+            <label class="depot-field" for="depot-select">
               Depósito
-            </span>
-
-            <span>
-              <i class="legend-dot"></i>
-              Ponto de entrega
-            </span>
-
-            <span>
-              <i class="legend-line"></i>
-              Arestas do grafo
-            </span>
-
-            <span>
-              <i class="legend-line legend-line--best"></i>
-              Melhor rota
-            </span>
+              <select id="depot-select"></select>
+            </label>
           </div>
+        </div>
 
-          <div class="panel-footnote">
-            A espessura e a opacidade das arestas são proporcionais a
-            τ/τmáx da iteração atual: a aresta com mais feromônio recebe
-            a espessura máxima. A melhor rota acumulada aparece em verde.
-            Passe o cursor sobre uma aresta para ver a distância e o
-            feromônio numérico.
-            <span id="pheromone-scale" class="pheromone-scale"></span>
-          </div>
+        <div class="setup-block">
+          <h3 id="parameters-heading">Parâmetros do algoritmo</h3>
 
-          <!-- MATRIZ DE DISTÂNCIAS -->
+          <div id="parameter-fields" class="parameters-grid"></div>
+        </div>
 
-          <div class="math-preview">
-            <div class="math-preview-heading">
-              <h4>Matriz de distâncias</h4>
-              <span class="read-only-tag">
-                Distância euclidiana
-              </span>
-            </div>
-
-            <p class="helper-text">
-              Distâncias entre todos os pares de vértices.
-              Os valores são apresentados de forma arredondada.
-            </p>
-
-            <div
-              id="distance-matrix"
-              class="distance-table-wrap"
-            ></div>
-
-            <p class="example-route">
-              <strong>Exemplo de percurso:</strong>
-              <span id="example-route">—</span>
-
-              <span class="example-length">
-                Distância total:
-                <strong id="example-distance">—</strong>
-              </span>
-            </p>
-          </div>
-
-          <div id="probability-preview"></div>
-
-        </section>
-
-        <!-- CONTROLES -->
-
-        <section class="panel control-panel" aria-labelledby="controls-heading">
-
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">04 · EXECUÇÃO</span>
-              <h3 id="controls-heading">Controles da simulação</h3>
-            </div>
-
-            <span class="state-pill">
-              Estado:
-              <strong id="simulation-state">—</strong>
-            </span>
-          </div>
-
-          <div class="controls-row">
-            <button
-              id="run-button"
-              type="button"
-              class="btn btn-primary"
-            >
-              Executar
-            </button>
-
-            <button
-              id="pause-button"
-              type="button"
-              class="btn"
-              disabled
-            >
-              Pausar
-            </button>
-
-            <button
-              id="step-button"
-              type="button"
-              class="btn"
-            >
-              Avançar uma iteração
-            </button>
-
-            <button
-              id="reset-button"
-              type="button"
-              class="btn"
-            >
-              Reiniciar
-            </button>
-          </div>
-
-          <p class="helper-text">
-            Execute a simulação completa, interrompa a execução,
-            avance individualmente ou restaure o estado inicial.
+        <div class="setup-apply">
+          <button id="apply-scenario" type="button" class="btn btn-primary">
+            Aplicar e reiniciar
+          </button>
+          <p id="params-note" class="hint">
+            Alterações em vértices ou parâmetros reiniciam a simulação.
           </p>
+        </div>
+      </section>
 
-        </section>
+      <section class="convergence" aria-labelledby="convergence-heading">
+        <h2 id="convergence-heading">Convergência</h2>
+        <p class="hint">
+          Melhor distância acumulada e média das formigas em cada iteração.
+        </p>
 
-        <!-- INDICADORES -->
+        <ul class="chart-legend" aria-label="Legenda do gráfico">
+          <li><i class="chart-key chart-key--best" aria-hidden="true"></i>Melhor acumulada</li>
+          <li><i class="chart-key chart-key--mean" aria-hidden="true"></i>Média das formigas</li>
+        </ul>
 
-        <section class="metrics-section" aria-label="Indicadores">
-
-          <div class="section-heading">
-            <div>
-              <span class="section-kicker">05 · ACOMPANHAMENTO</span>
-              <h3>Indicadores da simulação</h3>
-            </div>
-          </div>
-
-          <div class="metrics-grid">
-
-            <article class="metric-card">
-              <span class="metric-label">
-                Iteração atual
-              </span>
-
-              <strong
-                id="current-iteration"
-                class="metric-value"
-              >
-                —
-              </strong>
-
-              <span class="metric-caption">
-                Progresso da execução
-              </span>
-            </article>
-
-            <article class="metric-card">
-              <span class="metric-label">
-                Melhor distância acumulada
-              </span>
-
-              <strong
-                id="best-distance"
-                class="metric-value metric-value--long"
-              >
-                —
-              </strong>
-
-              <span class="metric-caption">
-                Melhor solução encontrada
-              </span>
-            </article>
-
-            <article class="metric-card">
-              <span class="metric-label">
-                Menor distância da iteração
-              </span>
-
-              <strong
-                id="iteration-distance"
-                class="metric-value"
-              >
-                —
-              </strong>
-
-              <span class="metric-caption">
-                Melhor formiga da iteração
-              </span>
-            </article>
-
-            <article class="metric-card">
-              <span class="metric-label">
-                Distância média
-              </span>
-
-              <strong
-                id="average-distance"
-                class="metric-value"
-              >
-                —
-              </strong>
-
-              <span class="metric-caption">
-                Média das rotas construídas
-              </span>
-            </article>
-
-          </div>
-        </section>
-
-        <!-- CONVERGÊNCIA -->
-
-        <section class="panel" aria-labelledby="convergence-heading">
-
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">06 · DESEMPENHO</span>
-              <h3 id="convergence-heading">
-                Evolução das distâncias
-              </h3>
-            </div>
-
-            <span class="read-only-tag">
-              Convergência
-            </span>
-          </div>
-
-          <div class="chart-legend">
-            <span>
-              <i class="chart-legend-line chart-legend-line--best"></i>
-              Melhor distância acumulada
-            </span>
-
-            <span>
-              <i class="chart-legend-line chart-legend-line--mean"></i>
-              Distância média
-            </span>
-          </div>
-
-          <div
-            id="convergence-chart"
-            class="convergence-chart"
-          >
-            <p class="helper-text">
-              O gráfico será preenchido após a primeira iteração.
-            </p>
-          </div>
-
-          <p class="chart-caption">
-            Acompanhe a evolução da qualidade das soluções
-            encontradas pela colônia ao longo das iterações.
-          </p>
-
-        </section>
-
-        <!-- HISTÓRICO -->
-
-        <section class="panel" aria-labelledby="history-heading">
-
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">07 · RESULTADOS</span>
-              <h3 id="history-heading">
-                Histórico de iterações
-              </h3>
-            </div>
-
-            <span
-              id="history-count"
-              class="read-only-tag"
-            >
-              Sem dados
-            </span>
-          </div>
-
-          <div
-            id="history-container"
-            class="history-container"
-          >
-            <p class="helper-text">
-              Nenhuma iteração concluída.
-            </p>
-          </div>
-
-          <div class="best-route-row">
-            <strong>Melhor rota encontrada</strong>
-            <span id="best-route">—</span>
-          </div>
-
-        </section>
-
-        <!-- LOGS -->
-
-        <section class="panel" aria-labelledby="logs-heading">
-
-          <div class="panel-header">
-            <div>
-              <span class="section-kicker">08 · DETALHAMENTO</span>
-              <h3 id="logs-heading">
-                Registro da execução
-              </h3>
-            </div>
-
-            <span
-              id="logs-count"
-              class="read-only-tag"
-            >
-              Sem dados
-            </span>
-          </div>
-
-          <div id="logs-container">
-            <p class="helper-text">
-              Os registros serão apresentados após a primeira iteração.
-            </p>
-          </div>
-
-        </section>
-
-      </div>
+        <div id="convergence-chart" class="convergence-chart">
+          <p class="hint">O gráfico aparece depois da primeira iteração.</p>
+        </div>
+      </section>
     </div>
+
+    <!-- Histórico por iteração -->
+    <section class="record" aria-labelledby="history-heading">
+      <div class="record-head">
+        <h2 id="history-heading">Histórico de iterações</h2>
+        <span id="history-count" class="meta">Sem dados</span>
+      </div>
+
+      <div id="history-container" class="history-container">
+        <p>Nenhuma iteração ainda.</p>
+      </div>
+    </section>
+
+    <!-- Registro detalhado -->
+    <section class="record" aria-labelledby="logs-heading">
+      <div class="record-head">
+        <h2 id="logs-heading">Registro da execução</h2>
+        <span id="logs-count" class="meta">Sem dados</span>
+      </div>
+
+      <p class="hint">
+        Abra uma iteração para ver as rotas de todas as formigas,
+        a construção passo a passo da rota da formiga 1 e a
+        atualização do feromônio em cada aresta.
+      </p>
+
+      <div id="logs-container" class="logs-container">
+        <p>O registro de cada iteração aparece aqui depois que ela termina.</p>
+      </div>
+    </section>
+
+    <!-- Material de consulta em abas -->
+    <section class="reference" aria-labelledby="reference-heading">
+      <h2 id="reference-heading">Dados de consulta</h2>
+
+      <div class="tabs" role="tablist" aria-labelledby="reference-heading">
+        <button
+          id="tab-distances"
+          class="tab"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-distances"
+        >Matriz de distâncias</button>
+        <button
+          id="tab-probabilities"
+          class="tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-probabilities"
+          tabindex="-1"
+        >Probabilidades iniciais</button>
+      </div>
+
+      <div
+        id="panel-distances"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-distances"
+      >
+        <p class="hint">
+          Distância euclidiana entre cada par de vértices, arredondada
+          para exibição. Durante a execução, a distância é fixa; só o
+          feromônio muda.
+        </p>
+
+        <div id="distance-matrix" class="table-scroll"></div>
+
+        <p class="example-route">
+          Exemplo de percurso na ordem cadastrada:
+          <span id="example-route" class="route-text">—</span>,
+          distância total <strong id="example-distance">—</strong>.
+        </p>
+      </div>
+
+      <div
+        id="panel-probabilities"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-probabilities"
+        hidden
+      >
+        <div id="probability-preview"></div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
-    <div>
-      <strong>ANT SYSTEM</strong>
-      <span>Projeto acadêmico · Inteligência Artificial</span>
-    </div>
-
+    <p>
+      Trabalho da disciplina de Inteligência Artificial,
+      Universidade Federal do Piauí, 2026.2.
+    </p>
     <a
       href="https://github.com/jvrosal/Colonia_de_formigas-IA"
       target="_blank"
       rel="noopener noreferrer"
-    >
-      Repositório do projeto
-    </a>
+    >Código-fonte no GitHub</a>
   </footer>
-
 </body>
 </html>
