@@ -139,6 +139,8 @@ A interface utiliza o motor de simulação implementado na Etapa 05.
 ### Etapa 07 — Visualização da convergência
 
 - Atualização do grafo a cada iteração com os feromônios calculados.
+- Espessura (1,5 a 9 px) e opacidade das arestas proporcionais a τ/τmáx da iteração atual.
+- Aviso abaixo do grafo sempre que a escala muda entre iterações, informando o τ máximo atual e o anterior e se ele aumentou ou diminuiu.
 - Destaque da melhor rota acumulada.
 - Consulta da distância e do feromônio de cada aresta.
 - Gráfico de convergência com a melhor distância acumulada e a distância média por iteração.
@@ -302,6 +304,10 @@ O comprimento ótimo é 14.
 
 Os testes verificam os comprimentos e a validade das rotas.
 
+**Resultado obtido:** os seis comprimentos calculados coincidem com os esperados (14, 16, 18, 16, 18 e 14). Rotas incompletas, com vértice repetido ou que não começam e terminam no depósito são rejeitadas.
+
+**Conclusão:** o cálculo das distâncias e do comprimento das rotas, incluindo o retorno ao depósito, está correto.
+
 ### 8.2. Probabilidades
 
 Configuração:
@@ -321,6 +327,15 @@ Probabilidades a partir do vértice A:
 Os testes verificam esses valores com tolerância de 0,000001.
 
 Também são verificados os casos α = 0, β = 0 e candidatos únicos.
+
+**Resultado obtido:**
+
+- A partir de A: p(A,B) ≈ 0,520156; p(A,C) ≈ 0,187256; p(A,D) ≈ 0,292588. A soma é 1.
+- Após visitar B: p(B,C) ≈ 0,609756 e p(B,D) ≈ 0,390244. A e B não participam do sorteio.
+- Com α = 0 e β = 0: os três candidatos recebem probabilidade 1/3.
+- Com um único candidato restante: probabilidade 1.
+
+**Conclusão:** os pesos e as probabilidades seguem as fórmulas do Ant System. O sorteio é proporcional e nenhum candidato é descartado por não ter o maior peso.
 
 ### 8.3. Evaporação e depósito
 
@@ -348,6 +363,10 @@ Com duas formigas percorrendo a mesma rota na primeira iteração:
 
 Esses valores são verificados pelos testes automatizados.
 
+**Resultado obtido:** os valores coincidem com os esperados. Log da aresta AB na primeira iteração: "anterior 1; após evaporação 0,5; depósito 1; final 1,5". Para AC: "anterior 1; após evaporação 0,5; depósito 0; final 0,5". Com ρ = 0%, AC permanece em 1 e as arestas do perímetro chegam a 2 (1 + 14/14).
+
+**Conclusão:** a evaporação e a soma dos depósitos são aplicadas somente depois que todas as formigas concluem as rotas. A aresta de retorno ao depósito também recebe depósito, e a matriz permanece simétrica.
+
 ### 8.4. Execução completa
 
 Configuração de referência:
@@ -374,15 +393,47 @@ A suíte verifica:
 
 Encontrar o ótimo em todas as execuções não é obrigatório.
 
+**Resultado obtido (semente 42):**
+
+- 30 registros, um por iteração.
+- Melhor rota: A → B → C → D → A, comprimento 14 (ótimo).
+- Todas as rotas construídas têm comprimento 14, 16 ou 18.
+- Repetir a execução, avançar algumas iterações e depois executar o restante, ou pausar e retomar pela interface, produz exatamente o mesmo histórico.
+- No estado inicial (iteração 0), a melhor distância aparece como "Ainda não calculada".
+
+**Conclusão:** a execução é reprodutível com a mesma semente, e a melhor distância acumulada nunca aumenta.
+
 ### 8.5. Comparação de parâmetros
 
-Os testes incluem execuções com:
+Demais parâmetros iguais aos da seção 8.4 (10 formigas, 30 iterações, α = 1, ρ = 50%, τ₀ = 1, Q = 14), sementes 1, 2, 3, 4 e 5.
 
-- β = 0
-- β = 2
-- Sementes 1, 2, 3, 4 e 5
+| Configuração | Melhor distância final por semente | Média da melhor distância | Execuções que atingiram 14 | Média das distâncias das formigas (todas as iterações) |
+|---|---|---:|---:|---:|
+| β = 0 | 14, 14, 14, 14, 14 | 14 | 5 de 5 | ≈ 15,88 |
+| β = 2 | 14, 14, 14, 14, 14 | 14 | 5 de 5 | ≈ 14,29 |
 
-Ainda é necessário registrar no relatório final as médias das melhores distâncias e quantas execuções atingiram o ótimo de 14 em cada configuração.
+**Interpretação:** nessa instância, com apenas seis rotas possíveis e 10 formigas por iteração, as duas configurações encontram o ótimo em todas as execuções. A diferença aparece na qualidade média das rotas: com β = 0 a distância não influencia a escolha, e as formigas dependem só do feromônio e do acaso, o que gera média ≈ 15,9. Com β = 2, as arestas curtas são favorecidas desde a primeira iteração, e a média cai para ≈ 14,3. Em instâncias maiores, essa diferença tende a afetar também a melhor distância final.
+
+### 8.6. Entradas inválidas
+
+Verificado na interface: cada caso abaixo impede a execução e exibe uma mensagem.
+
+| Entrada | Mensagem exibida |
+|---|---|
+| Dois vértices nas mesmas coordenadas | "O vértice 2 possui coordenadas já utilizadas." |
+| Identificador repetido | "O identificador "A" já está cadastrado." |
+| Identificador vazio | "O vértice 2 precisa de um identificador não vazio." |
+| Coordenada vazia | "A coordenada x do vértice 2 deve ser um número finito." |
+| x = 1000,5 | "A coordenada x do vértice 2 deve estar entre 0 e 1.000." |
+| x = 10,123 | "A coordenada x do vértice 2 deve ter no máximo duas casas decimais." |
+| Remover vértice com apenas 4 cadastrados | "São necessários pelo menos 4 vértices." |
+| Adicionar o 13º vértice | "O limite é de 12 vértices." |
+| Formigas = 0 ou 2,5 | "Valor inválido em Número de formigas." |
+| ρ = 95% | "Valor inválido em Evaporação (ρ)." |
+| α vazio | "Preencha Feromônio (α)." |
+| Semente = 1,5 | "Valor inválido em Semente aleatória." |
+
+Com ρ = 0%, a evaporação não reduz o feromônio. Apenas os depósitos o alteram (ver seção 8.3).
 
 ## 9. Situação atual
 
@@ -397,15 +448,11 @@ Implementadas:
 - Etapa 06: interface interativa e controles.
 - Etapa 07: visualização dinâmica e gráfico de convergência.
 
-Pendências para a entrega final:
+Os controles, a visualização dos feromônios, o gráfico de convergência e os logs foram verificados no navegador, em tela de computador e de celular.
 
-- Validar manualmente todos os controles no navegador.
-- Validar visualização dos feromônios e gráfico de convergência no navegador.
-- Conferir os logs detalhados de cada iteração.
-- Registrar resultados quantitativos dos testes comparativos.
-- Verificar a aplicação em diferentes tamanhos de tela.
-- Publicar a aplicação no GitHub Pages.
-- Completar a identificação dos integrantes.
+Pendência para a entrega final:
+
+- Publicar a aplicação no GitHub Pages e incluir o link neste README.
 
 ## 10. Repositório
 

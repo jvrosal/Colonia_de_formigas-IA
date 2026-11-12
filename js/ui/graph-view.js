@@ -7,6 +7,8 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const VIEW_WIDTH = 840;
 const VIEW_HEIGHT = 460;
 const PADDING = 66;
+const MIN_EDGE_WIDTH = 1.5;
+const MAX_EDGE_WIDTH = 9;
 
 function svgElement(name, attributes = {}, text = "") {
   const element = document.createElementNS(SVG_NS, name);
@@ -111,6 +113,17 @@ export function renderInitialGraphPreview(
     }
   }
 
+  let maxPheromone = 0;
+
+  if (pheromones) {
+    for (const edge of graphEdges) {
+      maxPheromone = Math.max(
+        maxPheromone,
+        pheromones[indices.get(edge.fromId)][indices.get(edge.toId)]
+      );
+    }
+  }
+
   for (const edge of graphEdges) {
     const from = coordinatesById.get(edge.fromId);
     const to = coordinatesById.get(edge.toId);
@@ -134,14 +147,17 @@ export function renderInitialGraphPreview(
       : undefined;
 
     if (pheromone !== undefined) {
-      // Escala fixa para a espessura das arestas.
-      const thickness =
-        1.2 + Math.min(5, Math.log1p(pheromone));
+      const ratio = maxPheromone > 0
+        ? pheromone / maxPheromone
+        : 0;
 
-      line.setAttribute(
-        "stroke-width",
-        thickness.toFixed(2)
-      );
+      const thickness =
+        MIN_EDGE_WIDTH +
+        (MAX_EDGE_WIDTH - MIN_EDGE_WIDTH) * ratio;
+
+      line.style.strokeWidth = `${thickness.toFixed(2)}px`;
+      line.style.strokeOpacity = (0.35 + 0.65 * ratio).toFixed(2);
+      line.dataset.pheromone = String(pheromone);
 
       const edgeKey = [
         edge.fromId,
@@ -221,4 +237,6 @@ export function renderInitialGraphPreview(
   }
 
   svg.append(edges, nodes);
+
+  return { maxPheromone };
 }

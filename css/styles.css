@@ -659,12 +659,18 @@ a {
   display: inline-block;
   width: 19px;
   height: 2px;
-  background: #b9a58b;
+  background: #9eb7d7;
+}
+
+.pheromone-scale {
+  display: block;
+  margin-top: 6px;
+  font-weight: 600;
 }
 
 .legend-line--best {
-  height: 3px;
-  background: var(--olive);
+  height: 5px;
+  background: #15966d;
 }
 
 .panel-footnote {

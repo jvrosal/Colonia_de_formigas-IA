@@ -208,8 +208,12 @@
           </div>
 
           <div class="panel-footnote">
-            A espessura das arestas representa a intensidade do feromônio.
-            A rota acumuladamente mais eficiente recebe destaque.
+            A espessura e a opacidade das arestas são proporcionais a
+            τ/τmáx da iteração atual: a aresta com mais feromônio recebe
+            a espessura máxima. A melhor rota acumulada aparece em verde.
+            Passe o cursor sobre uma aresta para ver a distância e o
+            feromônio numérico.
+            <span id="pheromone-scale" class="pheromone-scale"></span>
           </div>
 
           <!-- MATRIZ DE DISTÂNCIAS -->

@@ -275,12 +275,41 @@ export function initializeApp(root = document) {
     get("step-button").disabled =
       running || state.finished;
 
-    renderInitialGraphPreview(
+    const { maxPheromone } = renderInitialGraphPreview(
       get("graph-preview"),
       graph,
       state.pheromoneMatrix,
       state.bestRoute
     );
+
+    let scaleText =
+      `Escala atual: espessura máxima = τ ${format(maxPheromone)}.`;
+
+    if (latest) {
+      const previousMax = Math.max(
+        ...latest.edgeLogs.map(edge => edge.previous)
+      );
+
+      const changed =
+        Math.abs(maxPheromone - previousMax) >
+        1e-3 * Math.max(maxPheromone, previousMax);
+
+      if (changed) {
+        const direction = maxPheromone < previousMax
+          ? "diminuiu"
+          : "aumentou";
+
+        scaleText +=
+          ` A escala mudou: o τ máximo ${direction} em relação à ` +
+          `iteração anterior (τ ${format(previousMax)}). Uma aresta pode ` +
+          `parecer mais grossa mesmo tendo perdido feromônio; consulte ` +
+          `os valores numéricos.`;
+      } else {
+        scaleText += " Escala igual à da iteração anterior.";
+      }
+    }
+
+    get("pheromone-scale").textContent = scaleText;
 
     renderHistory(state);
     renderLogs(state);
