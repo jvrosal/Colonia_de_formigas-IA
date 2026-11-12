@@ -136,6 +136,7 @@ export function renderEditableVertices(
     }
 
     const type = document.createElement("td");
+    type.className = "vertex-type";
     type.textContent = vertex.id === depotId
       ? "Depósito"
       : "Entrega";
@@ -185,6 +186,43 @@ export function readVertexInputs(tableBody) {
   );
 }
 
+function describeRange(field) {
+  const kind = field.integer ? "um número inteiro" : "um número";
+  const suffix = field.suffix ?? "";
+
+  if (field.min === undefined || field.max === undefined) {
+    return `${field.label} deve ser ${kind}.`;
+  }
+
+  const min = field.min.toLocaleString("pt-BR");
+  const max = field.max.toLocaleString("pt-BR");
+
+  return `${field.label} deve ser ${kind} entre ${min}${suffix} e ${max}${suffix}.`;
+}
+
+export function syncDepotOptions(tableBody, depotSelect) {
+  const rows = Array.from(tableBody.querySelectorAll("tr"));
+  const selectedIndex = Math.max(0, depotSelect.selectedIndex);
+
+  depotSelect.replaceChildren();
+
+  rows.forEach((row, index) => {
+    const id = row.querySelector('[data-field="id"]').value;
+    const option = document.createElement("option");
+
+    option.value = id;
+    option.textContent = `Vértice ${id}`;
+    option.selected = index === selectedIndex;
+    depotSelect.append(option);
+
+    const type = row.querySelector(".vertex-type");
+
+    if (type) {
+      type.textContent = index === selectedIndex ? "Depósito" : "Entrega";
+    }
+  });
+}
+
 export function readParameterInputs(container, fields) {
   return Object.fromEntries(
     fields.map(field => {
@@ -197,7 +235,7 @@ export function readParameterInputs(container, fields) {
       }
 
       if (!input.checkValidity()) {
-        throw new Error(`Valor inválido em ${field.label}.`);
+        throw new Error(describeRange(field));
       }
 
       return [field.key, Number(input.value)];

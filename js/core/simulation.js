@@ -105,10 +105,24 @@ export function createSimulation(graph, parameters) {
     });
   }
 
-  // Executa uma única iteração.
-  function step() {
+  function getSummary() {
+    return {
+      iteration: state.iteration,
+      finished: state.iteration >= config.iterations,
+      pheromoneMatrix: state.pheromoneMatrix.map(row => [...row]),
+      bestRoute: state.bestRoute ? [...state.bestRoute] : null,
+      bestLength: state.bestLength,
+      historyLength: state.history.length
+    };
+  }
+
+  function getHistorySince(startIndex = 0) {
+    return structuredClone(state.history.slice(startIndex));
+  }
+
+  function advance() {
     if (state.iteration >= config.iterations) {
-      return getState();
+      return;
     }
 
     const routes = [];
@@ -172,14 +186,24 @@ export function createSimulation(graph, parameters) {
       antRoutes: routes,
       edgeLogs: update.edgeLogs
     });
+  }
 
+  // Executa uma iteração e devolve uma cópia do estado completo.
+  function step() {
+    advance();
     return getState();
+  }
+
+  // Executa uma iteração e devolve apenas o resumo (usado pela interface).
+  function stepSummary() {
+    advance();
+    return getSummary();
   }
 
   // Executa todas as iterações restantes.
   function runAll() {
     while (state.iteration < config.iterations) {
-      step();
+      advance();
     }
 
     return getState();
@@ -189,8 +213,11 @@ export function createSimulation(graph, parameters) {
 
   return Object.freeze({
     step,
+    stepSummary,
     runAll,
     reset,
-    getState
+    getState,
+    getSummary,
+    getHistorySince
   });
 }

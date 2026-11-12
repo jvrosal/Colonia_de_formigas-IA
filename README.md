@@ -115,7 +115,11 @@ Suas principais funções são:
 - `step()`: executa uma iteração.
 - `runAll()`: executa as iterações restantes.
 - `reset()`: restaura o estado inicial.
-- `getState()`: retorna o estado atual.
+- `getState()`: retorna uma cópia completa do estado atual, incluindo todo o histórico.
+- `stepSummary()` e `getSummary()`: executam uma iteração ou consultam o estado sem copiar o histórico.
+- `getHistorySince(n)`: retorna apenas os registros a partir da posição `n`.
+
+A interface usa os três últimos métodos para receber cada iteração uma única vez. Assim, o custo por iteração não cresce com o tamanho do histórico.
 
 ### Etapa 06 — Interface interativa
 
@@ -131,7 +135,13 @@ Recursos implementados:
 - Reiniciar a execução.
 - Visualizar a melhor rota.
 - Consultar métricas e histórico.
-- Inspecionar logs das decisões das formigas.
+- Inspecionar logs das decisões das formigas. Para cada iteração, o painel expansível mostra:
+  - A rota e o comprimento de todas as formigas, com destaque para a menor.
+  - A construção passo a passo da rota da Formiga 1: vértice atual, candidatos com τ, d, w e p, valor sorteado, vértice escolhido e retorno obrigatório ao depósito.
+  - Para cada aresta, o feromônio anterior, o valor após evaporação, o depósito total e o valor final.
+- Consultar no histórico a menor distância, a melhor rota de cada iteração, a média e a melhor distância acumulada.
+- Renomear um vértice ou trocar o depósito atualiza na hora a lista de depósitos e a coluna "Tipo".
+- Ao alterar dados ou parâmetros durante uma execução, Executar, Avançar ou Reiniciar aplicam as alterações e avisam que a simulação recomeçou do início.
 - Acompanhar os feromônios nas arestas.
 
 A interface utiliza o motor de simulação implementado na Etapa 05.
@@ -160,7 +170,11 @@ O gráfico utiliza os dados registrados pelo motor de simulação, sem recalcula
 | Evaporação (ρ) | 0% a 90% |
 | Feromônio inicial (τ₀) | 0,01 a 100 |
 | Constante Q | 0,01 a 10.000 |
-| Semente aleatória | Inteiro seguro |
+| Semente aleatória | Inteiro seguro (ver observação abaixo) |
+
+Observação sobre a semente: o gerador Mulberry32 usa apenas os 32 bits menos significativos da semente. Sementes que diferem por múltiplos de 2³² (por exemplo, 1 e 4.294.967.297) produzem os mesmos sorteios. Valores negativos também são aceitos e convertidos da mesma forma.
+
+As mensagens de erro dos parâmetros informam o intervalo aceito, por exemplo: "Número de formigas deve ser um número inteiro entre 1 e 100."
 
 Os identificadores dos vértices devem ser únicos.
 
@@ -428,10 +442,12 @@ Verificado na interface: cada caso abaixo impede a execução e exibe uma mensag
 | x = 10,123 | "A coordenada x do vértice 2 deve ter no máximo duas casas decimais." |
 | Remover vértice com apenas 4 cadastrados | "São necessários pelo menos 4 vértices." |
 | Adicionar o 13º vértice | "O limite é de 12 vértices." |
-| Formigas = 0 ou 2,5 | "Valor inválido em Número de formigas." |
-| ρ = 95% | "Valor inválido em Evaporação (ρ)." |
+| Formigas = 0 ou 2,5 | "Número de formigas deve ser um número inteiro entre 1 e 100." |
+| ρ = 95% | "Evaporação (ρ) deve ser um número entre 0% e 90%." |
+| α = 7 | "Feromônio (α) deve ser um número entre 0 e 5." |
+| τ₀ = 0 | "Feromônio inicial (τ₀) deve ser um número entre 0,01 e 100." |
 | α vazio | "Preencha Feromônio (α)." |
-| Semente = 1,5 | "Valor inválido em Semente aleatória." |
+| Semente = 1,5 | "Semente aleatória deve ser um número inteiro." |
 
 Com ρ = 0%, a evaporação não reduz o feromônio. Apenas os depósitos o alteram (ver seção 8.3).
 

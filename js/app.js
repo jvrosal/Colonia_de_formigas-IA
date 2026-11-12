@@ -18,7 +18,8 @@ import {
   renderInitialParameters,
   renderEditableVertices,
   readVertexInputs,
-  readParameterInputs
+  readParameterInputs,
+  syncDepotOptions
 } from "./ui/forms.js";
 
 import {
@@ -42,6 +43,11 @@ import {
 const format = value => value.toLocaleString(
   "pt-BR",
   { maximumFractionDigits: 4 }
+);
+
+const formatSig = value => value.toLocaleString(
+  "pt-BR",
+  { maximumSignificantDigits: 6 }
 );
 
 function el(tag, text = "") {
@@ -94,20 +100,24 @@ export function initializeApp(root = document) {
     timer = null;
   }
 
-  function renderHistory(state) {
-    const container = get("history-container");
-    container.replaceChildren();
+  let uiHistory = [];
+  let viewEngine = null;
+  let historyBody = null;
 
-    get("history-count").textContent =
-      `${state.history.length} registro(s)`;
+  function clearHistoryViews() {
+    uiHistory = [];
+    historyBody = null;
 
-    if (!state.history.length) {
-      container.append(
-        el("p", "Nenhuma iteração concluída.")
-      );
-      return;
-    }
+    get("history-container").replaceChildren(
+      el("p", "Nenhuma iteração concluída.")
+    );
 
+    get("logs-container").replaceChildren(
+      el("p", "Nenhuma iteração concluída.")
+    );
+  }
+
+  function createHistoryTable() {
     const table = el("table");
     table.className = "distance-table history-table";
 
@@ -117,6 +127,7 @@ export function initializeApp(root = document) {
     for (const text of [
       "Iteração",
       "Menor",
+      "Melhor rota da iteração",
       "Média",
       "Melhor acumulada"
     ]) {
@@ -124,114 +135,174 @@ export function initializeApp(root = document) {
     }
 
     head.append(header);
+    historyBody = el("tbody");
+    table.append(head, historyBody);
 
-    const tbody = el("tbody");
+    const wrapper = el("div");
+    wrapper.className = "distance-table-wrap";
+    wrapper.append(table);
 
-    for (const item of state.history) {
+    get("history-container").replaceChildren(wrapper);
+  }
+
+  function appendHistoryRows(entries) {
+    if (!entries.length) return;
+    if (!historyBody) createHistoryTable();
+
+    for (const item of entries) {
       const row = el("tr");
 
       for (const value of [
         item.iteration,
         format(item.iterationBestLength),
+        item.iterationBestRoute.join(" → "),
         format(item.meanLength),
         format(item.bestLength)
       ]) {
         row.append(el("td", String(value)));
       }
 
-      tbody.append(row);
+      historyBody.append(row);
     }
-
-    table.append(head, tbody);
-
-    const wrapper = el("div");
-    wrapper.className = "distance-table-wrap";
-    wrapper.append(table);
-
-    container.append(wrapper);
   }
 
-  function renderLogs(state) {
-    const container = get("logs-container");
-    container.replaceChildren();
+  function buildLogContent(entry) {
+    const fragment = document.createDocumentFragment();
 
-    get("logs-count").textContent =
-      `${state.history.length} iteração(ões)`;
+    const antsDetails = el("details");
+    antsDetails.open = entry.antRoutes.length <= 10;
+    antsDetails.append(
+      el("summary", `Rotas das ${entry.antRoutes.length} formiga(s)`)
+    );
 
-    if (!state.history.length) {
-      container.append(
-        el("p", "Nenhuma iteração concluída.")
+    const list = el("ol");
+
+    entry.antRoutes.forEach((ant, index) => {
+      const isBest = ant.length === entry.iterationBestLength;
+      list.append(
+        el(
+          "li",
+          `Formiga ${index + 1}: ${ant.route.join(" → ")} · comprimento ${format(ant.length)}${isBest ? " (menor da iteração)" : ""}`
+        )
       );
-      return;
+    });
+
+    antsDetails.append(list);
+    fragment.append(antsDetails);
+
+    const ant = entry.antRoutes[0];
+
+    fragment.append(
+      el(
+        "p",
+        `Construção da rota da Formiga 1 (w = τ^α × (1/d)^β; p = w / Σw):`
+      )
+    );
+
+    for (const step of ant.steps) {
+      if (step.returnToDepot) {
+        fragment.append(
+          el(
+            "p",
+            `Vértice atual ${step.currentId}: todos visitados · retorno obrigatório ${step.currentId} → ${step.chosenId}`
+          )
+        );
+        continue;
+      }
+
+      const candidates = step.candidates
+        .map(candidate =>
+          `${candidate.id} (τ ${formatSig(candidate.pheromone)}; d ${format(candidate.distance)}; w ${formatSig(candidate.weight)}; p ${format(candidate.probability * 100)}%)`
+        )
+        .join(" · ");
+
+      fragment.append(
+        el(
+          "p",
+          `Vértice atual ${step.currentId} · candidatos: ${candidates} · valor sorteado ${formatSig(step.randomValue)} → escolhido ${step.chosenId}`
+        )
+      );
     }
 
-    for (const entry of state.history) {
+    fragment.append(
+      el("p", `Comprimento da rota da Formiga 1: ${format(ant.length)}`)
+    );
+
+    const edgeDetails = el("details");
+
+    edgeDetails.append(
+      el("summary", "Evaporação e depósitos por aresta")
+    );
+
+    for (const edge of entry.edgeLogs) {
+      edgeDetails.append(
+        el(
+          "p",
+          `${edge.fromId}–${edge.toId}: anterior ${formatSig(edge.previous)}; após evaporação ${formatSig(edge.afterEvaporation)}; depósito ${formatSig(edge.totalDeposit)}; final ${formatSig(edge.final)}`
+        )
+      );
+    }
+
+    fragment.append(edgeDetails);
+    return fragment;
+  }
+
+  function appendLogEntries(entries) {
+    if (!entries.length) return;
+
+    const container = get("logs-container");
+
+    if (uiHistory.length === entries.length) {
+      container.replaceChildren();
+    }
+
+    for (const entry of entries) {
       const details = el("details");
       details.className = "iteration-log";
 
       details.append(
         el(
           "summary",
-          `Iteração ${entry.iteration} · menor distância ${format(entry.iterationBestLength)}`
+          `Iteração ${entry.iteration} · menor distância ${format(entry.iterationBestLength)} · média ${format(entry.meanLength)}`
         )
       );
 
-      const ant = entry.antRoutes[0];
-
-      details.append(
-        el(
-          "p",
-          `Formiga 1: ${ant.route.join(" → ")} · comprimento ${format(ant.length)}`
-        )
-      );
-
-      for (const step of ant.steps) {
-        if (step.returnToDepot) {
-          details.append(
-            el(
-              "p",
-              `Retorno obrigatório: ${step.currentId} → ${step.chosenId}`
-            )
-          );
-          continue;
+      details.addEventListener("toggle", () => {
+        if (details.open && !details.dataset.loaded) {
+          details.dataset.loaded = "true";
+          details.append(buildLogContent(entry));
         }
+      });
 
-        const candidates = step.candidates
-          .map(candidate =>
-            `${candidate.id}: ${(candidate.probability * 100).toFixed(2)}%`
-          )
-          .join("; ");
-
-        details.append(
-          el(
-            "p",
-            `${step.currentId} · candidatos [${candidates}] · escolhido ${step.chosenId}`
-          )
-        );
-      }
-
-      const edgeDetails = el("details");
-
-      edgeDetails.append(
-        el("summary", "Evaporação e depósitos por aresta")
-      );
-
-      for (const edge of entry.edgeLogs) {
-        edgeDetails.append(
-          el(
-            "p",
-            `${edge.fromId}–${edge.toId}: anterior ${format(edge.previous)}; evaporado ${format(edge.afterEvaporation)}; depósito ${format(edge.totalDeposit)}; final ${format(edge.final)}`
-          )
-        );
-      }
-
-      details.append(edgeDetails);
       container.append(details);
     }
   }
 
-  function renderState() {
-    const state = engine.getState();
+  function syncHistory(summary) {
+    if (
+      engine !== viewEngine ||
+      summary.historyLength < uiHistory.length
+    ) {
+      clearHistoryViews();
+      viewEngine = engine;
+    }
+
+    if (summary.historyLength > uiHistory.length) {
+      const entries = engine.getHistorySince(uiHistory.length);
+      uiHistory.push(...entries);
+      appendHistoryRows(entries);
+      appendLogEntries(entries);
+    }
+
+    get("history-count").textContent =
+      `${uiHistory.length} registro(s)`;
+
+    get("logs-count").textContent =
+      `${uiHistory.length} iteração(ões)`;
+  }
+
+  function renderState(state = engine.getSummary()) {
+    syncHistory(state);
 
     get("current-iteration").textContent =
       `${state.iteration} / ${config.iterations}`;
@@ -241,7 +312,7 @@ export function initializeApp(root = document) {
         ? "Ainda não calculada"
         : format(state.bestLength);
 
-    const latest = state.history.at(-1);
+    const latest = uiHistory.at(-1);
 
     get("iteration-distance").textContent =
       latest
@@ -311,12 +382,9 @@ export function initializeApp(root = document) {
 
     get("pheromone-scale").textContent = scaleText;
 
-    renderHistory(state);
-    renderLogs(state);
-
     renderConvergenceChart(
       get("convergence-chart"),
-      state.history
+      uiHistory
     );
   }
 
@@ -413,21 +481,24 @@ export function initializeApp(root = document) {
   function ensureUpdated() {
     if (hasPendingChanges) {
       applyInputs();
+      return true;
     }
+
+    return false;
   }
 
   function tick() {
     if (!running) return;
 
     safe(() => {
-      engine.step();
-      renderState();
+      const summary = engine.stepSummary();
 
-      if (engine.getState().finished) {
+      if (summary.finished) {
         stop();
-        renderState();
+        renderState(summary);
         status("Simulação concluída.");
       } else {
+        renderState(summary);
         timer = setTimeout(tick, 180);
       }
     });
@@ -436,14 +507,18 @@ export function initializeApp(root = document) {
   get("run-button").addEventListener(
     "click",
     () => safe(() => {
-      ensureUpdated();
+      const restarted = ensureUpdated();
 
-      if (engine.getState().finished) return;
+      if (engine.getSummary().finished) return;
 
       running = true;
       renderState();
 
-      status("Executando iterações...");
+      status(
+        restarted
+          ? "Alterações aplicadas: simulação reiniciada do início. Executando iterações..."
+          : "Executando iterações..."
+      );
 
       timer = setTimeout(tick, 0);
     })
@@ -461,12 +536,15 @@ export function initializeApp(root = document) {
   get("step-button").addEventListener(
     "click",
     () => safe(() => {
-      ensureUpdated();
+      const restarted = ensureUpdated();
       stop();
-      engine.step();
-      renderState();
+      renderState(engine.stepSummary());
 
-      status("Uma iteração concluída.");
+      status(
+        restarted
+          ? "Alterações aplicadas: simulação reiniciada do início e iteração 1 concluída."
+          : "Uma iteração concluída."
+      );
     })
   );
 
@@ -479,6 +557,7 @@ export function initializeApp(root = document) {
         applyInputs();
       } else {
         engine.reset();
+        viewEngine = null;
         renderState();
       }
 
@@ -597,8 +676,13 @@ export function initializeApp(root = document) {
 
   body.addEventListener(
     "input",
-    () => {
+    event => {
       hasPendingChanges = true;
+
+      // Renomear um vértice atualiza a lista de depósitos na hora.
+      if (event.target.dataset.field === "id") {
+        syncDepotOptions(body, depot);
+      }
     }
   );
 
@@ -606,6 +690,7 @@ export function initializeApp(root = document) {
     "change",
     () => {
       hasPendingChanges = true;
+      syncDepotOptions(body, depot);
     }
   );
 
