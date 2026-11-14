@@ -469,9 +469,7 @@ Com ρ = 0%, a evaporação não reduz o feromônio. Apenas os depósitos o alte
 O simulador reúne grafo editável, rotas completas, atualização de feromônios, controles de execução, gráfico de convergência e logs detalhados. As fórmulas, os casos controlados do enunciado e os comportamentos de interface descritos acima são verificados pela suíte de testes.
 
 ## 10. Repositório
-
-https://github.com/jvrosal/Colonia_de_formigas-IA
-- **Repositório público:** [\[github.com/jvrosal/Colonia_de_formigas-IA\](https://github.com/jvrosal/Colonia_de_formigas-IA)](https://github.com/jvrosal/Colonia_de_formigas-IA)
+- **Repositório público:** [\[github.com/jvrosal/Colonia_de_formigas-IA\](https://github.com/jvrosal/Colonia_de_formigas-IA)]
 - **Aplicação (GitHub Pages):** [(https://jvrosal.github.io/Colonia_de_formigas-IA/)](https://jvrosal.github.io/Colonia_de_formigas-IA/)
 
 ## 11. Autores
