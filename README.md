@@ -42,7 +42,7 @@ A aplicação funciona no navegador, sem servidor de aplicação.
 
 ## 3. Funcionalidades implementadas
 
-### Etapas 00 e 01 — Estrutura e grafo
+### Estrutura e representação do grafo
 
 - Estrutura inicial da aplicação.
 - Cadastro e validação dos vértices.
@@ -51,7 +51,7 @@ A aplicação funciona no navegador, sem servidor de aplicação.
 - Matriz de distâncias.
 - Validação de rotas completas.
 
-### Etapa 02 — Probabilidades
+### Probabilidades e sorteio proporcional
 
 - Inicialização da matriz de feromônios.
 - Cálculo dos pesos de escolha.
@@ -69,7 +69,7 @@ p(i,j) = w(i,j) / Σw(i,u)
 
 A soma considera apenas os vértices ainda não visitados.
 
-### Etapa 03 — Construção de rotas
+### Construção das rotas
 
 Cada formiga constrói uma rota completa:
 
@@ -82,7 +82,7 @@ Cada formiga constrói uma rota completa:
 
 Os vértices intermediários não podem ser repetidos.
 
-### Etapa 04 — Atualização dos feromônios
+### Evaporação e depósito de feromônios
 
 A atualização ocorre somente depois que todas as formigas de uma iteração terminam suas rotas.
 
@@ -98,7 +98,7 @@ O depósito é realizado apenas nas arestas percorridas pela formiga, incluindo 
 
 A matriz permanece simétrica e utiliza o piso numérico de 10^-12 nas arestas.
 
-### Etapa 05 — Motor de simulação
+### Motor de simulação e histórico
 
 O motor permite:
 
@@ -125,7 +125,7 @@ Suas principais funções são:
 
 A interface usa os três últimos métodos para receber cada iteração uma única vez. Assim, o custo por iteração não cresce com o tamanho do histórico.
 
-### Etapa 06 — Interface interativa
+### Interface interativa e controles
 
 A interface permite configurar e acompanhar o algoritmo diretamente no navegador.
 
@@ -145,18 +145,19 @@ Recursos implementados:
   - Para cada aresta, o feromônio anterior, o valor após evaporação, o depósito total e o valor final.
 - Consultar no histórico a menor distância, a melhor rota de cada iteração, a média e a melhor distância acumulada.
 - Renomear um vértice ou trocar o depósito atualiza na hora a lista de depósitos e a coluna "Tipo".
-- Ao alterar dados ou parâmetros durante uma execução, Executar, Avançar ou Reiniciar aplicam as alterações e avisam que a simulação recomeçou do início.
+- Alterar vértices, depósito ou parâmetros pausa automaticamente uma execução em andamento. O histórico permanece disponível até a aplicação da nova configuração.
+- Com alterações pendentes, Executar e Avançar uma iteração ficam desabilitados. Aplicar e reiniciar valida os novos dados, limpa o histórico, restaura os feromônios e reinicia a semente. Reiniciar também aplica alterações pendentes; entradas inválidas geram erro e não substituem o estado anterior.
 - Acompanhar os feromônios nas arestas.
 
-A interface utiliza o motor de simulação implementado na Etapa 05.
+A interface consome o motor de simulação em `js/core/simulation.js`.
 
-### Etapa 07 — Visualização da convergência
+### Visualização dinâmica do grafo e da convergência
 
 - Atualização do grafo a cada iteração com os feromônios calculados.
-- Espessura (1,5 a 9 px) e opacidade das arestas proporcionais a τ/τmáx da iteração atual.
+- Espessura (1,5 a 12 px) e opacidade das arestas proporcionais a τ/τmáx da iteração atual.
 - Aviso abaixo do grafo sempre que a escala muda entre iterações, informando o τ máximo atual e o anterior e se ele aumentou ou diminuiu.
 - Destaque da melhor rota acumulada.
-- Consulta da distância e do feromônio de cada aresta.
+- Consulta da distância e do feromônio de cada aresta, com notação científica para valores muito pequenos.
 - Gráfico de convergência com a melhor distância acumulada e a distância média por iteração.
 - Atualização do gráfico durante a execução, avanço manual e retomada.
 
@@ -228,7 +229,10 @@ Colonia_de_formigas-IA/
     ├── graph.test.js
     ├── ant-system.test.js
     ├── routes-pheromones.test.js
-    └── simulation.test.js
+    ├── simulation.test.js
+    ├── interface.test.js
+    └── helpers/
+        └── dom-simulado.js
 ```
 
 ## 6. Como executar
@@ -267,14 +271,14 @@ O servidor local é utilizado para carregar corretamente os módulos JavaScript.
 
 1. Configure os vértices e o depósito.
 2. Defina os parâmetros do algoritmo.
-3. Clique em Aplicar cenário.
+3. Clique em **Aplicar e reiniciar** para validar o cenário.
 4. Utilize Executar para iniciar a simulação.
-5. Utilize Pausar para interromper temporariamente.
-6. Utilize Avançar para completar uma iteração.
+5. Utilize **Pausar** para interromper temporariamente sem perder o estado.
+6. Utilize **Avançar uma iteração** para concluir uma iteração e permanecer pausado.
 7. Consulte as métricas, a melhor rota e o histórico.
-8. Utilize Reiniciar para retornar ao estado inicial.
+8. Utilize **Reiniciar** para restaurar feromônios, semente e histórico.
 
-Alterações nos dados ou parâmetros exigem reinício da simulação.
+Se editar um parâmetro, vértice ou depósito durante a execução, o simulador pausa automaticamente. Aplique os dados com **Aplicar e reiniciar** antes de executar ou avançar novamente; entradas inválidas impedem a aplicação.
 
 ## 8. Testes automatizados
 
@@ -290,7 +294,7 @@ Ou:
 node --test
 ```
 
-A suíte atual contém 87 testes automatizados, abrangendo as Etapas 00 a 05 e verificações estruturais da Etapa 06.
+Com os testes de interface (`tests/interface.test.js`) e os testes de estrutura, grafo, algoritmo, simulação e validação, a suíte contém **99 testes automatizados**. Os testes de interface utilizam um DOM simulado e verificam troca de depósito, formatação de feromônios, pausa por edição e reinício; não substituem a conferência visual em um navegador.
 
 ### 8.1. Instância de referência
 
@@ -460,28 +464,15 @@ Verificado na interface: cada caso abaixo impede a execução e exibe uma mensag
 
 Com ρ = 0%, a evaporação não reduz o feromônio. Apenas os depósitos o alteram (ver seção 8.3).
 
-## 9. Situação atual
+## 9. Estado do projeto e publicação
 
-Implementadas:
-
-- Etapa 00: estrutura inicial.
-- Etapa 01: grafo e distâncias.
-- Etapa 02: probabilidades e sorteios.
-- Etapa 03: rotas completas.
-- Etapa 04: evaporação e depósitos.
-- Etapa 05: motor de simulação.
-- Etapa 06: interface interativa e controles.
-- Etapa 07: visualização dinâmica e gráfico de convergência.
-
-Os controles, a visualização dos feromônios, o gráfico de convergência e os logs foram verificados no navegador, em tela de computador e de celular.
-
-Pendência para a entrega final:
-
-- Publicar a aplicação no GitHub Pages e incluir o link neste README.
+O simulador reúne grafo editável, rotas completas, atualização de feromônios, controles de execução, gráfico de convergência e logs detalhados. As fórmulas, os casos controlados do enunciado e os comportamentos de interface descritos acima são verificados pela suíte de testes.
 
 ## 10. Repositório
 
 https://github.com/jvrosal/Colonia_de_formigas-IA
+- **Repositório público:** [\[github.com/jvrosal/Colonia_de_formigas-IA\](https://github.com/jvrosal/Colonia_de_formigas-IA)](https://github.com/jvrosal/Colonia_de_formigas-IA)
+- **Aplicação (GitHub Pages):** [(https://jvrosal.github.io/Colonia_de_formigas-IA/)](https://jvrosal.github.io/Colonia_de_formigas-IA/)
 
 ## 11. Autores
 

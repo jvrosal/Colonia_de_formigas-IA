@@ -1,7 +1,3 @@
-/**
- * Etapa 01 — matemática do grafo completo não direcionado e das rotas.
- * Índices da matriz seguem exatamente a ordem de graph.vertices.
- */
 import { validateVertices, validateDepot, validateRoute } from "./validation.js";
 
 export class GraphValidationError extends Error {

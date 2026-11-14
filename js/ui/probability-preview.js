@@ -1,4 +1,3 @@
-/** Etapa 02 — demonstração somente de leitura dos cálculos de UMA escolha. */
 import {
   createPheromoneMatrix, previewTransition,
 } from "../core/ant-system.js";

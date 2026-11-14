@@ -261,7 +261,7 @@ test("distribuição empírica do sorteio aproxima as probabilidades, sem seleç
   assert.ok(tally.get("B")>0 && tally.get("C")>0 && tally.get("D")>0);
 });
 
-test("integração da Etapa 02 funciona no cenário inicial de cinco vértices", () => {
+test("integração funciona no cenário inicial de cinco vértices", () => {
   const initialGraph = createGraph(INITIAL_VERTICES, INITIAL_DEPOT_ID);
   const matrix = createPheromoneMatrix(initialGraph.vertices.length, DEFAULT_PARAMETERS.initialPheromone);
   const result = previewTransition(initialGraph, matrix, initialGraph.depotId, [initialGraph.depotId],

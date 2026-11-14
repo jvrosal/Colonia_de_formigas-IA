@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Etapas 00 a 02: grafo, distâncias e núcleo probabilístico Ant System",
+  "description": "Simulador interativo Ant System para otimização de rotas, com grafo, feromônios, histórico e testes automatizados",
   "scripts": {
     "test": "node --test"
   }

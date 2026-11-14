@@ -23,7 +23,8 @@ import {
 } from "./ui/forms.js";
 
 import {
-  renderInitialGraphPreview
+  renderInitialGraphPreview,
+  formatPheromone
 } from "./ui/graph-view.js";
 
 import { renderConvergenceChart } from "./ui/convergence-chart.js";
@@ -100,6 +101,45 @@ export function initializeApp(root = document) {
     }
 
     timer = null;
+  }
+
+  function syncExecutionControls(state = engine.getSummary()) {
+  const stateLabel = state.finished
+    ? "Finalizada"
+    : running
+      ? "Executando"
+      : state.iteration
+        ? "Pausada"
+        : "Não iniciada";
+
+  get("simulation-state").textContent = hasPendingChanges
+    ? `${stateLabel} — alterações pendentes`
+    : stateLabel;
+
+  get("run-button").disabled =
+    running || state.finished || hasPendingChanges;
+
+  get("pause-button").disabled = !running;
+
+  get("step-button").disabled =
+    running || state.finished || hasPendingChanges;
+
+  get("params-note").textContent = hasPendingChanges
+    ? "Alterações pendentes. Clique em Aplicar e reiniciar para continuar."
+    : "Alterações em vértices ou parâmetros exigem reinício da simulação.";
+}
+
+  function markPendingChanges() {
+    const wasRunning = running;
+    if (wasRunning) stop();
+
+    hasPendingChanges = true;
+    syncExecutionControls();
+
+    status(wasRunning
+      ? "Simulação pausada: alterações pendentes. Clique em Aplicar e reiniciar."
+      : "Alterações pendentes. Clique em Aplicar e reiniciar para continuar."
+    );
   }
 
   let uiHistory = [];
@@ -214,7 +254,7 @@ export function initializeApp(root = document) {
 
       const candidates = step.candidates
         .map(candidate =>
-          `${candidate.id} (τ ${formatSig(candidate.pheromone)}; d ${format(candidate.distance)}; w ${formatSig(candidate.weight)}; p ${format(candidate.probability * 100)}%)`
+          `${candidate.id} (τ ${formatPheromone(candidate.pheromone)}; d ${format(candidate.distance)}; w ${formatSig(candidate.weight)}; p ${format(candidate.probability * 100)}%)`
         )
         .join("; ");
 
@@ -240,7 +280,7 @@ export function initializeApp(root = document) {
       edgeDetails.append(
         el(
           "p",
-          `${edge.fromId}–${edge.toId}: anterior ${formatSig(edge.previous)}; após evaporação ${formatSig(edge.afterEvaporation)}; depósito ${formatSig(edge.totalDeposit)}; final ${formatSig(edge.final)}`
+          `${edge.fromId}–${edge.toId}: anterior ${formatPheromone(edge.previous)}; após evaporação ${formatPheromone(edge.afterEvaporation)}; depósito ${formatPheromone(edge.totalDeposit)}; final ${formatPheromone(edge.final)}`
         )
       );
     }
@@ -340,22 +380,7 @@ export function initializeApp(root = document) {
         ? state.bestRoute.join(" → ")
         : "Ainda não calculada";
 
-    get("simulation-state").textContent =
-      state.finished
-        ? "Finalizada"
-        : running
-          ? "Executando"
-          : state.iteration
-            ? "Pausada"
-            : "Não iniciada";
-
-    get("run-button").disabled =
-      running || state.finished;
-
-    get("pause-button").disabled = !running;
-
-    get("step-button").disabled =
-      running || state.finished;
+    syncExecutionControls(state);
 
     const { maxPheromone } = renderInitialGraphPreview(
       get("graph-preview"),
@@ -364,8 +389,7 @@ export function initializeApp(root = document) {
       state.bestRoute
     );
 
-    let scaleText =
-      `Escala atual: espessura máxima = τ ${format(maxPheromone)}.`;
+    let scaleText =`Escala atual: espessura máxima = τ ${formatPheromone(maxPheromone)}.`;
 
     if (latest) {
       const previousMax = Math.max(
@@ -383,7 +407,7 @@ export function initializeApp(root = document) {
 
         scaleText +=
           ` A escala mudou: o τ máximo ${direction} em relação à ` +
-          `iteração anterior (τ ${format(previousMax)}). Uma aresta pode ` +
+          `iteração anterior (τ ${formatPheromone(previousMax)}). Uma aresta pode ` +
           `parecer mais grossa mesmo tendo perdido feromônio; consulte ` +
           `os valores numéricos.`;
       } else {
@@ -392,7 +416,7 @@ export function initializeApp(root = document) {
     }
 
     get("pheromone-scale").textContent = scaleText;
-    get("pheromone-max").textContent = `τ ${format(maxPheromone)}`;
+    get("pheromone-max").textContent =`τ ${formatPheromone(maxPheromone)}`;
 
     renderConvergenceChart(
       get("convergence-chart"),
@@ -426,7 +450,10 @@ export function initializeApp(root = document) {
       `${graph.vertices.length} vértices e ${expectedEdgeCount(graph.vertices.length)} arestas`;
 
     const example = [
-      ...graph.vertices.map(v => v.id),
+      graph.depotId,
+      ...graph.vertices
+        .filter(v => v.id !== graph.depotId)
+        .map(v => v.id),
       graph.depotId
     ];
 
@@ -490,12 +517,10 @@ export function initializeApp(root = document) {
     }
   }
 
-  function ensureUpdated() {
-    if (hasPendingChanges) {
-      applyInputs();
-      return true;
-    }
+  function canContinue() {
+    if (!hasPendingChanges) return true;
 
+    status("Alterações pendentes. Clique em Aplicar e reiniciar antes de executar.");
     return false;
   }
 
@@ -519,18 +544,12 @@ export function initializeApp(root = document) {
   get("run-button").addEventListener(
     "click",
     () => safe(() => {
-      const restarted = ensureUpdated();
-
-      if (engine.getSummary().finished) return;
+      if (!canContinue() || engine.getSummary().finished) return;
 
       running = true;
       renderState();
 
-      status(
-        restarted
-          ? "Alterações aplicadas: simulação reiniciada do início. Executando iterações..."
-          : "Executando iterações..."
-      );
+      status("Executando iterações...");
 
       timer = setTimeout(tick, 0);
     })
@@ -548,15 +567,11 @@ export function initializeApp(root = document) {
   get("step-button").addEventListener(
     "click",
     () => safe(() => {
-      const restarted = ensureUpdated();
+      if (!canContinue()) return;
+
       stop();
       renderState(engine.stepSummary());
-
-      status(
-        restarted
-          ? "Alterações aplicadas: simulação reiniciada do início e iteração 1 concluída."
-          : "Uma iteração concluída."
-      );
+      status("Uma iteração concluída.");
     })
   );
 
@@ -632,11 +647,8 @@ export function initializeApp(root = document) {
         depot.value
       );
 
-      hasPendingChanges = true;
+      markPendingChanges();
 
-      status(
-        "Vértice adicionado. Aplique o cenário para validar."
-      );
     })
   );
 
@@ -678,40 +690,31 @@ export function initializeApp(root = document) {
         selected
       );
 
-      hasPendingChanges = true;
-
-      status(
-        "Vértice removido. Aplique o cenário para validar."
-      );
+      markPendingChanges();
     })
   );
 
   body.addEventListener(
     "input",
     event => {
-      hasPendingChanges = true;
-
       // Renomear um vértice atualiza a lista de depósitos na hora.
       if (event.target.dataset.field === "id") {
         syncDepotOptions(body, depot);
       }
+
+      markPendingChanges();
     }
   );
 
   depot.addEventListener(
     "change",
     () => {
-      hasPendingChanges = true;
       syncDepotOptions(body, depot);
+      markPendingChanges();
     }
   );
 
-  params.addEventListener(
-    "input",
-    () => {
-      hasPendingChanges = true;
-    }
-  );
+  params.addEventListener("input", markPendingChanges);
 
   initTabs(root.querySelector(".tabs"));
 

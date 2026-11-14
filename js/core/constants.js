@@ -1,7 +1,3 @@
-/**
- * Etapas 00–02 — cenário e configurações iniciais.
- * O núcleo probabilístico existe, mas ainda não há execução de rotas.
- */
 export const INITIAL_VERTICES = Object.freeze([
   Object.freeze({ id: "A", x: 100, y: 100 }),
   Object.freeze({ id: "B", x: 300, y: 100 }),
@@ -23,10 +19,6 @@ export const DEFAULT_PARAMETERS = Object.freeze({
   seed: 42,
 });
 
-/**
- * Metadados para a interface. As validações de vértices e depósito são feitas na Etapa 01.
- * A edição da interface e as validações dos controles serão ativadas na Etapa 06.
- */
 export const PARAMETER_FIELDS = Object.freeze([
   Object.freeze({ key: "ants", label: "Número de formigas", min: 1, max: 100, step: 1, integer: true }),
   Object.freeze({ key: "iterations", label: "Número de iterações", min: 1, max: 200, step: 1, integer: true }),

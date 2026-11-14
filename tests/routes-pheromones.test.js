@@ -36,8 +36,8 @@ const close = (a, b) => {
   );
 };
 
-// TESTE 1 — Construção de rota completa.
-test("Etapa 03: rota completa válida", () => {
+//Construção de rota completa.
+test("Rota completa válida", () => {
   const ant = buildAntRoute(
     graph,
     tau(),
@@ -67,8 +67,8 @@ test("Etapa 03: rota completa válida", () => {
   );
 });
 
-// TESTE 2 — Reprodutibilidade.
-test("Etapa 03: mesma semente, mesma rota", () => {
+//Reprodutibilidade.
+test("Mesma semente, mesma rota", () => {
   const matrix = tau();
 
   const a = buildAntRoute(
@@ -93,8 +93,8 @@ test("Etapa 03: mesma semente, mesma rota", () => {
   assert.deepEqual(matrix, tau());
 });
 
-// TESTE 3 — Primeira atualização.
-test("Etapa 04: evaporação e depósito", () => {
+//Primeira atualização.
+test("Evaporação e depósito", () => {
   const result = updatePheromones(
     graph,
     tau(),
@@ -139,8 +139,8 @@ test("Etapa 04: evaporação e depósito", () => {
   });
 });
 
-// TESTE 4 — Segunda iteração.
-test("Etapa 04: segunda iteração", () => {
+//Segunda iteração.
+test("Segunda iteração", () => {
   const first = updatePheromones(
     graph,
     tau(),
@@ -161,8 +161,8 @@ test("Etapa 04: segunda iteração", () => {
   close(second.matrix[0][2], 0.25);
 });
 
-// TESTE 5 — Duas formigas.
-test("Etapa 04: depósito de duas formigas", () => {
+//Duas formigas.
+test("Depósito de duas formigas", () => {
   const original = tau();
 
   const result = updatePheromones(
@@ -179,8 +179,8 @@ test("Etapa 04: depósito de duas formigas", () => {
   assert.deepEqual(original, tau());
 });
 
-// TESTE 6 — Evaporação zero e simetria.
-test("Etapa 04: evaporação zero", () => {
+//Evaporação zero e simetria.
+test("Evaporação zero", () => {
   const result = updatePheromones(
     graph,
     tau(),
@@ -204,8 +204,8 @@ test("Etapa 04: evaporação zero", () => {
   }
 });
 
-// TESTE 7 — Entradas inválidas.
-test("Etapa 04: rejeita entradas inválidas", () => {
+//Entradas inválidas.
+test("Rejeita entradas inválidas", () => {
   assert.throws(() =>
     updatePheromones(
       graph,

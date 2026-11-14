@@ -1,7 +1,3 @@
-/**
- * Etapa 01 — validações puras dos dados do problema.
- * Nenhuma função altera os dados recebidos ou depende do navegador.
- */
 export const MIN_VERTICES = 4;
 export const MAX_VERTICES = 12;
 export const MAX_COORDINATE = 1000;

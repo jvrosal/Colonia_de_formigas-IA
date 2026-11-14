@@ -1,4 +1,3 @@
-/** Estado informativo inicial. O cálculo das métricas virá nas Etapas 05 e 08. */
 export function renderInitialDashboard(documentRoot, vertexCount, iterationLimit) {
   documentRoot.getElementById("vertex-count").textContent = String(vertexCount);
   documentRoot.getElementById("current-iteration").textContent = `0 / ${iterationLimit}`;

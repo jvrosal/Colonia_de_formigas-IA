@@ -11,6 +11,18 @@ const MIN_EDGE_WIDTH = 1.5;
 const MAX_EDGE_WIDTH = 12;
 const NODE_RADIUS = 17;
 
+export function formatPheromone(value) {
+  if (value === 0) return "0";
+
+  if (Math.abs(value) < 0.000001) {
+    return value.toExponential(3);
+  }
+
+  return value.toLocaleString("pt-BR", {
+    maximumSignificantDigits: 8
+  });
+}
+
 function svgElement(name, attributes = {}, text = "") {
   const element = document.createElementNS(SVG_NS, name);
 
@@ -189,10 +201,7 @@ export function renderInitialGraphPreview(
       `Aresta ${edge.fromId}–${edge.toId}\nDistância: ${distanceText}`;
 
     if (pheromone !== undefined) {
-      tooltip += `\nFeromônio: ${pheromone.toLocaleString(
-        "pt-BR",
-        { maximumFractionDigits: 8 }
-      )}`;
+      tooltip += `\nFeromônio: ${formatPheromone(pheromone)}`;
     }
 
     const hit = svgElement("line", {

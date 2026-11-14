@@ -1,12 +1,6 @@
 
 import { calculateRouteLength } from "./graph.js";
 
-/**
- * Etapas 02–04:
- * - Pesos e probabilidades
- * - Construção de rotas completas
- * - Evaporação e depósito de feromônios
- */
 
 const ACO_MIN_VERTICES = 4;
 const ACO_MAX_VERTICES = 12;

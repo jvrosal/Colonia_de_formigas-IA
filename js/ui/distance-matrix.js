@@ -1,4 +1,3 @@
-/** Etapa 01 — tabela exclusivamente informativa derivada da matriz real. */
 function display(value) {
   return value.toLocaleString("pt-BR", { maximumFractionDigits: 4 });
 }
